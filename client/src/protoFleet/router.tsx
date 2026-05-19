@@ -31,6 +31,7 @@ const SettingsMiningPools = lazy(() => import("@/protoFleet/features/settings/co
 const SettingsTeam = lazy(() => import("@/protoFleet/features/settings/components/Team"));
 const SettingsFirmware = lazy(() => import("@/protoFleet/features/settings/components/Firmware"));
 const SettingsSchedules = lazy(() => import("@/protoFleet/features/settings/components/Schedules/SchedulesPage"));
+const SettingsNotifications = lazy(() => import("@/protoFleet/features/notifications/pages/Notifications"));
 const SettingsApiKeys = lazy(() => import("@/protoFleet/features/settings/components/ApiKeys"));
 const FleetDown = lazy(() => import("@/protoFleet/components/FleetDown/FleetDown"));
 
@@ -169,6 +170,12 @@ const router = createBrowserRouter([
     "/settings/schedules",
     <SettingsLayout>
       <SettingsSchedules />
+    </SettingsLayout>,
+  ),
+  createRoute(
+    "/settings/notifications",
+    <SettingsLayout>
+      <SettingsNotifications />
     </SettingsLayout>,
   ),
   createRoute(

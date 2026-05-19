@@ -82,6 +82,11 @@ export const secondaryNavItems: SecondaryNavItem[] = [
     parent: "/settings",
   },
   {
+    path: "/settings/notifications",
+    label: "Notifications",
+    parent: "/settings",
+  },
+  {
     path: "/settings/api-keys",
     label: "API Keys",
     parent: "/settings",
