@@ -14,6 +14,8 @@ export const RULE_TEMPLATES: RuleTemplateMeta[] = [
   { id: "temperature", label: "Temperature", defaultDuration: 900, defaultValue: 85, comparator: ">" },
   { id: "pool", label: "Pool", defaultDuration: 120, defaultValue: null, comparator: null },
   { id: "command_failure", label: "Cmd failure", defaultDuration: 0, defaultValue: null, comparator: null },
+  { id: "hardware_error", label: "Hardware error", defaultDuration: 0, defaultValue: null, comparator: null },
+  { id: "energy", label: "Energy / Curtailment", defaultDuration: 0, defaultValue: null, comparator: null },
   { id: "custom", label: "Custom", defaultDuration: 60, defaultValue: null, comparator: null },
 ];
 

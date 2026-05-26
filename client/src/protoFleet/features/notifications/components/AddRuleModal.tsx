@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import RuleChannelsField from "./RuleChannelsField";
+import RuleLivePreview from "./RuleLivePreview";
 import SinglePickerField from "./SinglePickerField";
 import { useNotificationsStore } from "@/protoFleet/features/notifications/store/notificationsStore";
+import { getLivePreview } from "@/protoFleet/features/notifications/lib/livePreview";
 import {
   FLEET_METRICS,
   RULE_SCOPE_LABELS,
@@ -51,6 +53,7 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
   const [customExpr, setCustomExpr] = useState("");
   const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
+  const [step, setStep] = useState<"form" | "preview">("form");
 
   const tplMeta = useMemo(() => RULE_TEMPLATES.find((t) => t.id === template), [template]);
 
@@ -71,6 +74,7 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
       setCustomExpr(editingRule.custom_expr ?? "");
       setSelectedChannelIds(editingRule.channel_ids ?? []);
       setErrorMsg("");
+      setStep("form");
     } else {
       setTemplate("offline");
       setName("");
@@ -81,6 +85,7 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
       setCustomExpr("");
       setSelectedChannelIds(channels.length > 0 ? [channels[0].id] : []);
       setErrorMsg("");
+      setStep("form");
     }
   }
 
@@ -111,10 +116,21 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
     clearError();
   };
 
+  const validateAndPreview = useCallback(() => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setErrorMsg("Add a name for this rule");
+      return;
+    }
+    setErrorMsg("");
+    setStep("preview");
+  }, [name]);
+
   const handleSave = useCallback(() => {
     const trimmedName = name.trim();
     if (!trimmedName) {
       setErrorMsg("Add a name for this rule");
+      setStep("form");
       return;
     }
 
@@ -182,24 +198,64 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
   const scopeTargets = useMemo(() => getRuleScopeTargets(scope), [scope]);
   const showTarget = !RULE_SCOPE_NO_TARGET.has(scope);
 
+  const livePreview = useMemo(() => {
+    const targetLabel = scopeTargets.find((t) => t.id === scopeTarget)?.label ?? null;
+    const channelNames = selectedChannelIds
+      .map((id) => channels.find((c) => c.id === id)?.name)
+      .filter((n): n is string => Boolean(n));
+    return getLivePreview({
+      template,
+      scope,
+      scopeTargetLabel: targetLabel,
+      thresholdValue,
+      thresholdDuration,
+      channelNames,
+      customExpr,
+    });
+  }, [template, scope, scopeTarget, scopeTargets, thresholdValue, thresholdDuration, selectedChannelIds, channels, customExpr]);
+
+  const previewButtons = [
+    {
+      text: "Back",
+      onClick: () => setStep("form"),
+      variant: variants.secondary,
+      dismissModalOnClick: false,
+    },
+    {
+      text: "Confirm and save",
+      onClick: handleSave,
+      variant: variants.primary,
+      dismissModalOnClick: false,
+    },
+  ];
+
+  const formButtons = [
+    {
+      text: "Save rule",
+      onClick: validateAndPreview,
+      variant: variants.primary,
+      dismissModalOnClick: false,
+    },
+  ];
+
   return (
     <Modal
       open={open}
       onDismiss={onDismiss}
-      title={isEditing ? "Edit rule" : "Add rule"}
-      description="Start from a template or write your own PromQL. The server scopes everything to this org automatically."
-      buttons={[
-        {
-          text: "Save rule",
-          onClick: handleSave,
-          variant: variants.primary,
-          dismissModalOnClick: false,
-        },
-      ]}
+      title={step === "preview" ? "Preview" : isEditing ? "Edit rule" : "Add rule"}
+      description={
+        step === "preview"
+          ? "Confirm this is what your notification will look like across channels."
+          : "Start from a template or write your own PromQL. The server scopes everything to this org automatically."
+      }
+      buttons={step === "preview" ? previewButtons : formButtons}
       divider={false}
     >
       {errorMsg ? <Callout className="mb-6" intent="danger" prefixIcon={<Alert />} title={errorMsg} /> : null}
 
+      {step === "preview" ? (
+        <RuleLivePreview preview={livePreview} />
+      ) : (
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <Select
@@ -304,6 +360,7 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
           onToggle={toggleChannel}
         />
       </div>
+      )}
     </Modal>
   );
 };

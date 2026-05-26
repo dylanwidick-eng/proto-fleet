@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 
-import { ActivityFilterSchema } from "@/protoFleet/api/generated/activity/v1/activity_pb";
+import { ActivityFilterSchema, EventTypeOptionSchema } from "@/protoFleet/api/generated/activity/v1/activity_pb";
 import { useActivity } from "@/protoFleet/api/useActivity";
 import { useActivityFilterOptions } from "@/protoFleet/api/useActivityFilterOptions";
 import { useExportActivity } from "@/protoFleet/api/useExportActivity";
 import NoFilterResultsEmptyState from "@/protoFleet/components/NoFilterResultsEmptyState";
 import ActivityFilters from "@/protoFleet/features/activity/components/ActivityFilters";
-import ActivityTable from "@/protoFleet/features/activity/components/ActivityTable";
 import { formatLabel } from "@/protoFleet/features/activity/utils/formatLabel";
+import UnifiedActivityFeed from "@/protoFleet/features/notifications/components/UnifiedActivityFeed";
+import { getSeedNotificationActivity } from "@/protoFleet/features/notifications/lib/seedNotificationActivity";
 import { Alert, DismissTiny } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import Callout from "@/shared/components/Callout";
@@ -17,6 +18,7 @@ import ProgressCircular from "@/shared/components/ProgressCircular";
 import { debounce } from "@/shared/utils/utility";
 
 const PAGE_SIZE = 50;
+const NOTIFICATION_TYPE_ID = "notification";
 
 const ActivityPage = () => {
   const [searchText, setSearchText] = useState("");
@@ -41,16 +43,23 @@ const ActivityPage = () => {
     [debouncedSetSearch],
   );
 
+  const backendTypes = useMemo(
+    () => selectedTypes.filter((t) => t !== NOTIFICATION_TYPE_ID),
+    [selectedTypes],
+  );
+
   const filter = useMemo(
     () =>
       create(ActivityFilterSchema, {
-        eventTypes: selectedTypes,
+        eventTypes: backendTypes,
         scopeTypes: selectedScopes,
         userIds: selectedUsers,
         searchText: debouncedSearchText,
       }),
-    [selectedTypes, selectedScopes, selectedUsers, debouncedSearchText],
+    [backendTypes, selectedScopes, selectedUsers, debouncedSearchText],
   );
+
+  const showNotifications = selectedTypes.length === 0 || selectedTypes.includes(NOTIFICATION_TYPE_ID);
 
   const { activities, totalCount, isLoading, error, hasMore, loadMore } = useActivity({
     filter,
@@ -58,6 +67,14 @@ const ActivityPage = () => {
   });
   const { exportCsv, isExportingCsv } = useExportActivity();
   const { eventTypes, scopeTypes, users } = useActivityFilterOptions();
+
+  const augmentedEventTypes = useMemo(
+    () => [
+      create(EventTypeOptionSchema, { eventType: NOTIFICATION_TYPE_ID, eventCategory: "notification" }),
+      ...eventTypes,
+    ],
+    [eventTypes],
+  );
 
   const hasStartedLoadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
@@ -136,7 +153,7 @@ const ActivityPage = () => {
           <ActivityFilters
             searchValue={searchText}
             onSearchChange={handleSearchChange}
-            eventTypes={eventTypes}
+            eventTypes={augmentedEventTypes}
             scopeTypes={scopeTypes}
             users={users}
             selectedTypes={selectedTypes}
@@ -169,8 +186,9 @@ const ActivityPage = () => {
       ) : null}
 
       <div className="p-6 pt-0 laptop:p-10 laptop:pt-0">
-        <ActivityTable
+        <UnifiedActivityFeed
           activities={activities}
+          notifications={showNotifications ? getSeedNotificationActivity() : []}
           noDataElement={
             isLoading ? (
               <></>

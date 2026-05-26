@@ -3,7 +3,7 @@ import LocationSelector from "./LocationSelector";
 import SchedulePill from "./SchedulePill";
 import type { UseSchedulePillDataResult } from "./useSchedulePillData";
 import { usePageBackground } from "@/protoFleet/hooks/usePageBackground";
-import { Pause } from "@/shared/assets/icons";
+import { Notification, Pause } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import { useReactiveLocalStorage } from "@/shared/hooks/useReactiveLocalStorage";
 import { useWindowDimensions } from "@/shared/hooks/useWindowDimensions";
@@ -38,6 +38,11 @@ const HeaderWidgets = ({
           onToggleScheduleStatus={onToggleScheduleStatus}
         />
       ) : null}
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-core-primary-5 text-text-primary hover:opacity-80">
+        <button type="button" aria-label="Notifications" className="flex items-center" onClick={() => {}}>
+          <Notification width="w-4" />
+        </button>
+      </div>
       {dismissedSetup ? (
         <Button variant={variants.secondary} size={sizes.compact} text="Continue setup" onClick={onContinueSetup} />
       ) : null}

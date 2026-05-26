@@ -39,6 +39,8 @@ export type RuleTemplate =
   | "hashrate"
   | "pool"
   | "command_failure"
+  | "hardware_error"
+  | "energy"
   | "custom";
 
 export type RuleScopeKind = "all" | "site" | "building" | "rack" | "group" | "pool" | "schedule" | "devices";
