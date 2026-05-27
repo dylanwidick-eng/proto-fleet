@@ -85,6 +85,69 @@ When a feature is ready to share with a real engineer:
 - Open a normal PR (against `block/proto-fleet`) or share the branch link.
   None of the hosting infrastructure travels with it.
 
+## Working with collaborators
+
+This fork is set up so multiple designers can prototype against the same
+baseline. The fork owner adds collaborators via the GitHub repo settings;
+once added, they can push branches directly.
+
+### Branch naming
+
+Use `proto/<initials>/<feature>` for personal feature branches:
+
+- `proto/dw/notifications`
+- `proto/jl/curtailment`
+- `proto/jl/curtailment-v2`
+
+This makes ownership scannable in `git branch -r` and prevents collisions
+when two people prototype overlapping ideas.
+
+### Shared branches
+
+| Branch | Who edits |
+|---|---|
+| `main` | Tracks upstream `block/proto-fleet`. Don't push. |
+| `blockcell-shims` | **Shared.** PR-review recommended — changes here affect every designer's deploys. Don't push directly without a heads-up. |
+| `proto/<initials>/...` | Owned by that designer; others rebase/branch off only with their go-ahead. |
+
+### Onboarding a new designer
+
+1. **Get added as a collaborator** on the fork (ask the fork owner).
+2. **Clone** the fork:
+   ```bash
+   git clone https://github.com/dylanwidick-eng/proto-fleet.git
+   cd proto-fleet
+   ```
+3. **Activate Hermit** for the pinned toolchain:
+   ```bash
+   . ./bin/activate-hermit
+   ```
+4. **Install Docker Desktop** (on macOS/Windows). Enable host networking:
+   Settings → Resources → Network → Enable host networking.
+5. **Read this doc first.** `PROTOTYPE.md` (this file, on `blockcell-shims`)
+   is the contract — branch hygiene matters here.
+6. **Run the stack locally** to verify setup:
+   ```bash
+   just dev
+   ```
+   Browser: http://localhost:5173 — should boot a real login page against
+   the Docker-backed fleet API.
+7. **Branch off `main`** with the naming convention above, then iterate.
+
+### Keeping in sync with upstream
+
+When upstream `block/proto-fleet/main` moves forward:
+
+```bash
+git fetch origin
+git checkout main && git merge --ff-only origin/main
+git checkout blockcell-shims && git rebase main
+git push fork blockcell-shims --force-with-lease   # if shims branch was rebased
+```
+
+Coordinate the `blockcell-shims` rebase with collaborators since a force-push
+will require them to reset their local copy.
+
 ## For LLM agents
 
 If you're working in this fork as an agent:
