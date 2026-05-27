@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components -- lazy() route components colocated with route config; not HMR-relevant */
 import { createElement, lazy, ReactNode } from "react";
-import { createBrowserRouter, LoaderFunction, Outlet, redirect } from "react-router-dom";
+import { createBrowserRouter, createHashRouter, LoaderFunction, Outlet, redirect } from "react-router-dom";
 
 import App from "./components/App";
 import SingleMinerWrapper from "./components/SingleMinerWrapper";
@@ -129,7 +129,9 @@ const wrappedMinerRoutes = singleMinerRoutes.map((route) => {
 /**
  * Router configuration - defines actual route tree with React elements
  */
-const router = createBrowserRouter([
+const routerFactory = import.meta.env.VITE_DEMO_MODE === "1" ? createHashRouter : createBrowserRouter;
+
+const router = routerFactory([
   // Dashboard (Home)
   createRoute("/", <Dashboard />, { bg: "surface-5" }),
 

@@ -10,6 +10,8 @@ const Auth = () => {
     (requiresPasswordChange: boolean) => {
       if (requiresPasswordChange) {
         navigate("/update-password");
+      } else if (import.meta.env.VITE_DEMO_MODE === "1") {
+        navigate("/activity");
       } else {
         navigate("/");
       }

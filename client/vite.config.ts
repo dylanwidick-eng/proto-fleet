@@ -146,7 +146,7 @@ export default defineConfig(({ mode, command }) => {
 
   return {
     ...(modes[mode] || defaultConfig),
-    base: "/",
+    base: process.env.PROTOFLEET_BASE ?? "/",
     envDir: process.cwd(),
     plugins: [react(), responsiveImagePlugin(), moveHtmlFiles(mode), copyPublicDirectory(mode, command)],
     resolve: {

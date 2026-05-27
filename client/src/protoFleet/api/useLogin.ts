@@ -35,6 +35,17 @@ const useLogin = () => {
 
   const login = useCallback(
     async ({ loginRequest, onSuccess, onError, onFinally, skipLogoutOnError }: LoginProps) => {
+      if (import.meta.env.VITE_DEMO_MODE === "1") {
+        setSessionExpiry(new Date(Date.now() + 24 * 3600 * 1000));
+        setIsAuthenticated(true);
+        setUsername(loginRequest.username || "demo");
+        setRole("admin");
+        setAuthLoading(false);
+        onSuccess?.(false);
+        onFinally?.();
+        return;
+      }
+
       await authClient
         .authenticate(loginRequest)
         .then((res) => {
