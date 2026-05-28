@@ -28,6 +28,7 @@ import { FLEET_VISIBLE_PAIRING_STATUSES } from "@/protoFleet/features/fleetManag
 import { encodeSortToURL, parseSortFromURL } from "@/protoFleet/features/fleetManagement/utils/sortUrlParams";
 import CompleteSetup from "@/protoFleet/features/onboarding/components/CompleteSetup/CompleteSetup";
 import Miners from "@/protoFleet/features/onboarding/components/Miners";
+import { getSeedMinerIds, getSeedMiners } from "@/protoFleet/features/notifications/lib/seedMiners";
 import ErrorBoundary from "@/shared/components/ErrorBoundary";
 import { SORT_ASC, SORT_DESC } from "@/shared/components/List/types";
 
@@ -112,8 +113,22 @@ const Fleet = () => {
     pairingStatuses: FLEET_VISIBLE_PAIRING_STATUSES,
   });
 
+  // Demo-mode mock miners: if the backend returns empty (e.g. on Blockcell), drop in a seed fleet
+  // so reviewers can see the list UI rather than the empty pairing state.
+  const demoMode = import.meta.env.VITE_DEMO_MODE === "1";
+  const useDemoSeed = demoMode && hasInitialLoadCompleted && totalMiners === 0;
+  const demoIds = useMemo(() => (useDemoSeed ? getSeedMinerIds() : null), [useDemoSeed]);
+  const demoMiners = useMemo(() => (useDemoSeed ? getSeedMiners() : null), [useDemoSeed]);
+  const effectiveMinerIds = demoIds ?? minerIds;
+  const effectiveMiners = demoMiners ?? miners;
+  const effectiveTotalMiners = useDemoSeed ? (demoIds?.length ?? 0) : totalMiners;
+  const effectiveTotalUnfilteredMiners =
+    demoMode && unfilteredCountLoaded && totalUnfilteredMiners === 0
+      ? (demoIds?.length ?? getSeedMinerIds().length)
+      : totalUnfilteredMiners;
+
   // Fetch errors for all loaded miners
-  const { errorsByDevice, hasLoaded: errorsLoaded, refetch: refetchErrors } = useDeviceErrors(minerIds);
+  const { errorsByDevice, hasLoaded: errorsLoaded, refetch: refetchErrors } = useDeviceErrors(effectiveMinerIds);
 
   // Batch operations (ephemeral UI state)
   const {
@@ -201,7 +216,7 @@ const Fleet = () => {
 
   return (
     <>
-      {!unfilteredCountLoaded || totalUnfilteredMiners > 0 || totalMiners > 0 ? (
+      {!unfilteredCountLoaded || effectiveTotalUnfilteredMiners > 0 || effectiveTotalMiners > 0 ? (
         <CompleteSetup
           className="sticky left-0 mb-10 max-w-full px-6 pt-6 laptop:px-10 laptop:pt-10"
           lastPairingCompletedAt={lastPairingCompletedAt}
@@ -212,14 +227,14 @@ const Fleet = () => {
       <ErrorBoundary>
         <MinerList
           title="Miners"
-          minerIds={minerIds}
-          miners={miners}
+          minerIds={effectiveMinerIds}
+          miners={effectiveMiners}
           errorsByDevice={errorsByDevice}
           errorsLoaded={errorsLoaded}
           getActiveBatches={getActiveBatches}
           batchStateVersion={batchStateVersion}
-          totalMiners={totalMiners}
-          totalUnfilteredMiners={totalUnfilteredMiners}
+          totalMiners={effectiveTotalMiners}
+          totalUnfilteredMiners={effectiveTotalUnfilteredMiners}
           totalDisabledMiners={totalAuthNeededMiners}
           paddingLeft={{
             phone: "24px",
