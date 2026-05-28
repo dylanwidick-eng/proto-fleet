@@ -9,6 +9,7 @@ import NoFilterResultsEmptyState from "@/protoFleet/components/NoFilterResultsEm
 import ActivityFilters from "@/protoFleet/features/activity/components/ActivityFilters";
 import { formatLabel } from "@/protoFleet/features/activity/utils/formatLabel";
 import UnifiedActivityFeed from "@/protoFleet/features/notifications/components/UnifiedActivityFeed";
+import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
 import { getSeedNotificationActivity } from "@/protoFleet/features/notifications/lib/seedNotificationActivity";
 import { Alert, DismissTiny } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
@@ -21,6 +22,7 @@ const PAGE_SIZE = 50;
 const NOTIFICATION_TYPE_ID = "notification";
 
 const ActivityPage = () => {
+  const notificationModel = useNotificationModel();
   const [searchText, setSearchText] = useState("");
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -59,7 +61,12 @@ const ActivityPage = () => {
     [backendTypes, selectedScopes, selectedUsers, debouncedSearchText],
   );
 
-  const showNotifications = selectedTypes.length === 0 || selectedTypes.includes(NOTIFICATION_TYPE_ID);
+  // M2 (bell modal) and M3 (own page) host notifications elsewhere. Activity stays upstream-shaped.
+  const showNotifications =
+    notificationModel === "m2" || notificationModel === "m3"
+      ? false
+      : selectedTypes.length === 0 || selectedTypes.includes(NOTIFICATION_TYPE_ID);
+  const showActivities = true;
 
   const { activities, totalCount, isLoading, error, hasMore, loadMore } = useActivity({
     filter,
@@ -69,11 +76,14 @@ const ActivityPage = () => {
   const { eventTypes, scopeTypes, users } = useActivityFilterOptions();
 
   const augmentedEventTypes = useMemo(
-    () => [
-      create(EventTypeOptionSchema, { eventType: NOTIFICATION_TYPE_ID, eventCategory: "notification" }),
-      ...eventTypes,
-    ],
-    [eventTypes],
+    () =>
+      notificationModel === "m2" || notificationModel === "m3"
+        ? eventTypes
+        : [
+            create(EventTypeOptionSchema, { eventType: NOTIFICATION_TYPE_ID, eventCategory: "notification" }),
+            ...eventTypes,
+          ],
+    [eventTypes, notificationModel],
   );
 
   const hasStartedLoadingRef = useRef(false);
@@ -187,7 +197,7 @@ const ActivityPage = () => {
 
       <div className="p-6 pt-0 laptop:p-10 laptop:pt-0">
         <UnifiedActivityFeed
-          activities={activities}
+          activities={showActivities ? activities : []}
           notifications={showNotifications ? getSeedNotificationActivity() : []}
           noDataElement={
             isLoading ? (

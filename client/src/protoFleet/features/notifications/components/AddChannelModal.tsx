@@ -11,16 +11,20 @@ import { pushToast, STATUSES } from "@/shared/features/toaster";
 
 interface AddChannelModalProps {
   open: boolean;
+  editingChannel?: Channel | null;
   onDismiss: () => void;
 }
 
 const newChannelId = () => `chn_${Date.now().toString(36)}`;
 
-const AddChannelModal = ({ open, onDismiss }: AddChannelModalProps) => {
+const AddChannelModal = ({ open, editingChannel, onDismiss }: AddChannelModalProps) => {
   const channelsCount = useNotificationsStore((s) => s.channels.length);
   const rules = useNotificationsStore((s) => s.rules);
   const appendChannel = useNotificationsStore((s) => s.appendChannel);
+  const updateChannel = useNotificationsStore((s) => s.updateChannel);
   const updateRule = useNotificationsStore((s) => s.updateRule);
+
+  const isEditing = editingChannel != null;
 
   const [kind, setKind] = useState<ChannelKind>("webhook");
   const [name, setName] = useState("");
@@ -36,10 +40,22 @@ const AddChannelModal = ({ open, onDismiss }: AddChannelModalProps) => {
 
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (prevOpen !== open) {
-    setPrevOpen(open);
-    if (!open) {
+  const [syncedFor, setSyncedFor] = useState<string | null>(null);
+  const syncKey = open ? (editingChannel?.id ?? "__add__") : null;
+  if (syncedFor !== syncKey) {
+    setSyncedFor(syncKey);
+    if (open && editingChannel) {
+      setKind(editingChannel.kind);
+      setName(editingChannel.name);
+      setWebhookUrl(editingChannel.webhook?.url ?? "");
+      setBearerHeader(editingChannel.webhook?.bearer_header ?? "");
+      setSmtpHost(editingChannel.smtp?.host ?? "");
+      setSmtpPort(editingChannel.smtp?.port != null ? String(editingChannel.smtp.port) : "");
+      setSmtpUsername(editingChannel.smtp?.username ?? "");
+      setSmtpFrom(editingChannel.smtp?.from ?? "");
+      setSmtpTo((editingChannel.smtp?.to ?? []).join(", "));
+      setErrorMsg("");
+    } else if (open) {
       setKind("webhook");
       setName("");
       setWebhookUrl("");
@@ -98,6 +114,37 @@ const AddChannelModal = ({ open, onDismiss }: AddChannelModalProps) => {
     }
 
     const now = new Date().toISOString();
+
+    if (isEditing && editingChannel) {
+      updateChannel(editingChannel.id, (prev) => ({
+        ...prev,
+        name: trimmedName,
+        kind,
+        webhook,
+        smtp,
+        updated_at: now,
+        // Destination changed → invalidate previous test result
+        validated_at:
+          prev.kind === kind &&
+          (kind === "webhook"
+            ? prev.webhook?.url === webhook?.url
+            : JSON.stringify(prev.smtp) === JSON.stringify(smtp))
+            ? prev.validated_at
+            : null,
+        validation_state:
+          prev.kind === kind &&
+          (kind === "webhook"
+            ? prev.webhook?.url === webhook?.url
+            : JSON.stringify(prev.smtp) === JSON.stringify(smtp))
+            ? prev.validation_state
+            : "pending",
+        validation_error: null,
+      }));
+      pushToast({ message: `Updated: ${trimmedName}`, status: STATUSES.success });
+      onDismiss();
+      return;
+    }
+
     const channel: Channel = {
       id: newChannelId(),
       organization_id: "org_local_dev",
@@ -154,8 +201,11 @@ const AddChannelModal = ({ open, onDismiss }: AddChannelModalProps) => {
     channelsCount,
     rules,
     appendChannel,
+    updateChannel,
     updateRule,
     onDismiss,
+    isEditing,
+    editingChannel,
   ]);
 
   // Only surface "Send test" once there's something testable. For webhooks that's
@@ -167,7 +217,7 @@ const AddChannelModal = ({ open, onDismiss }: AddChannelModalProps) => {
     <Modal
       open={open}
       onDismiss={onDismiss}
-      title="Add channel"
+      title={isEditing ? "Edit channel" : "Add channel"}
       description="Pick a destination. Test the channel before saving so you don't ship a dead receiver into the live config."
       buttons={[
         ...(canTest

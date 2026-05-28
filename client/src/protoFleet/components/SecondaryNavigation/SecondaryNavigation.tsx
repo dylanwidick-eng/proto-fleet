@@ -38,10 +38,10 @@ const SecondaryNavigation = ({ items }: SecondaryNavigationProps) => {
   if (visibleItems.length === 0) return null;
 
   return (
-    <nav aria-label="Settings">
+    <nav aria-label="Settings" className="sticky top-0 self-start">
       <ul
         data-testid="secondary-nav"
-        className="flex min-h-[calc(100vh-(--spacing(1))*15)] w-[176px] shrink-0 flex-col gap-3 px-3 pt-3 text-text-primary-70"
+        className="flex max-h-[calc(100vh-(--spacing(1))*15)] w-[176px] shrink-0 flex-col gap-3 overflow-y-auto px-3 pt-3 text-text-primary-70"
       >
         {visibleItems.map((item) => {
           return (

@@ -4,7 +4,7 @@ import ChannelEditableCell from "./ChannelEditableCell";
 import ChannelStatusBadge from "./ChannelStatusBadge";
 import { useNotificationsStore } from "@/protoFleet/features/notifications/store/notificationsStore";
 import type { Channel } from "@/protoFleet/features/notifications/types";
-import { Checkmark, Trash } from "@/shared/assets/icons";
+import { Checkmark, Edit, Trash } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import Header from "@/shared/components/Header";
 import List from "@/shared/components/List";
@@ -30,44 +30,17 @@ const ChannelsSection = () => {
   const removeChannel = useNotificationsStore((s) => s.removeChannel);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
 
-  const handleSaveName = useCallback(
-    (id: string, next: string) => {
-      updateChannel(id, (prev) => ({ ...prev, name: next, updated_at: new Date().toISOString() }));
-      pushToast({ message: `Renamed: ${next}`, status: STATUSES.success });
-    },
-    [updateChannel],
-  );
+  const handleEdit = useCallback((channel: Channel) => {
+    setEditingChannel(channel);
+    setShowAddModal(true);
+  }, []);
 
-  const handleSaveDestination = useCallback(
-    (id: string, next: string) => {
-      updateChannel(id, (prev) => {
-        const updated: Channel = {
-          ...prev,
-          updated_at: new Date().toISOString(),
-          // Editing destination invalidates the previous test — operator can retest.
-          validated_at: null,
-          validation_state: "pending",
-          validation_error: null,
-        };
-        if (prev.kind === "webhook") {
-          updated.webhook = { ...(prev.webhook ?? { bearer_header: null }), url: next };
-        } else {
-          const to = next.split(",").map((s) => s.trim()).filter(Boolean);
-          updated.smtp = {
-            host: prev.smtp?.host ?? "smtp.example.com",
-            port: prev.smtp?.port ?? 587,
-            username: prev.smtp?.username ?? "alerts@example.com",
-            from: prev.smtp?.from ?? "Proto Fleet Alerts <alerts@example.com>",
-            to,
-          };
-        }
-        return updated;
-      });
-      pushToast({ message: "Destination updated", status: STATUSES.success });
-    },
-    [updateChannel],
-  );
+  const closeModal = useCallback(() => {
+    setShowAddModal(false);
+    setEditingChannel(null);
+  }, []);
 
   const handleTest = useCallback(
     (id: string) => {
@@ -95,6 +68,11 @@ const ChannelsSection = () => {
   const actions: ListAction<Channel>[] = useMemo(
     () => [
       {
+        title: "Edit",
+        icon: <Edit />,
+        actionHandler: handleEdit,
+      },
+      {
         title: "Test",
         icon: <Checkmark />,
         actionHandler: (channel) => handleTest(channel.id),
@@ -106,56 +84,44 @@ const ChannelsSection = () => {
         actionHandler: handleDelete,
       },
     ],
-    [handleTest, handleDelete],
+    [handleEdit, handleTest, handleDelete],
   );
 
   const colConfig: ColConfig<Channel, string, ChannelColumns> = useMemo(
     () => ({
       name: {
-        component: (channel) => (
-          <ChannelEditableCell
-            value={channel.name}
-            placeholder="Name"
-            ariaLabel="name"
-            onSave={(next) => handleSaveName(channel.id, next)}
-          />
-        ),
-        width: "w-64",
+        component: (channel) => <ChannelEditableCell value={channel.name} />,
+        width: "w-80",
       },
       destination: {
-        component: (channel) => (
-          <ChannelEditableCell
-            value={formatDestination(channel)}
-            placeholder={channel.kind === "webhook" ? "https://hooks…" : "oncall@example.com"}
-            ariaLabel="destination"
-            onSave={(next) => handleSaveDestination(channel.id, next)}
-          />
-        ),
+        component: (channel) => <ChannelEditableCell value={formatDestination(channel)} />,
         width: "w-96",
         allowWrap: true,
       },
       status: {
         component: (channel) => <ChannelStatusBadge state={channel.validation_state} />,
-        width: "w-40",
+        width: "w-80",
       },
     }),
-    [handleSaveName, handleSaveDestination],
+    [],
   );
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border-5 p-6">
-      <div className="flex items-center justify-between">
-        <Header title="Channels" titleSize="text-heading-200" />
-        <Button
-          variant={variants.secondary}
-          size={sizes.compact}
-          text="Add channel"
-          onClick={() => setShowAddModal(true)}
-        />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <Header title="Channels" titleSize="text-heading-200" />
+          <Button
+            variant={variants.secondary}
+            size={sizes.compact}
+            text="Add channel"
+            onClick={() => setShowAddModal(true)}
+          />
+        </div>
+        <p className="text-300 text-text-primary-50">
+          Webhook and email destinations the rule engine delivers notifications to.
+        </p>
       </div>
-      <p className="text-300 text-text-primary-50">
-        Webhook and email destinations the rule engine delivers notifications to.
-      </p>
 
       <List<Channel, string, ChannelColumns>
         items={channels}
@@ -171,9 +137,11 @@ const ChannelsSection = () => {
           </div>
         }
         actions={actions}
+        applyColumnWidthsToCells
+        tableClassName="mb-6 [&_td]:!border-x-0 [&_th]:!border-x-0 [&_td[data-testid='action']>div]:!ml-auto"
       />
 
-      <AddChannelModal open={showAddModal} onDismiss={() => setShowAddModal(false)} />
+      <AddChannelModal open={showAddModal} editingChannel={editingChannel} onDismiss={closeModal} />
     </section>
   );
 };

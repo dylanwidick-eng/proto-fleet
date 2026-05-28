@@ -17,6 +17,12 @@ interface ActivityFiltersProps {
   onTypesChange: (types: string[]) => void;
   onScopesChange: (scopes: string[]) => void;
   onUsersChange: (users: string[]) => void;
+  /** Override the Type filter's options (used by M2 to show 3 high-level choices). */
+  typeOptionsOverride?: { id: string; label: string }[];
+  /** Override the Type filter's title. */
+  typeFilterTitle?: string;
+  /** Override the User filter's title (e.g. "User / Event" when M2 mixes them). */
+  userFilterTitle?: string;
 }
 
 const ActivityFilters = ({
@@ -31,10 +37,14 @@ const ActivityFilters = ({
   onTypesChange,
   onScopesChange,
   onUsersChange,
+  typeOptionsOverride,
+  typeFilterTitle = "Type",
+  userFilterTitle = "Users",
 }: ActivityFiltersProps) => {
   const typeOptions = useMemo(
-    () => eventTypes.map((et) => ({ id: et.eventType, label: formatLabel(et.eventType) })),
-    [eventTypes],
+    () =>
+      typeOptionsOverride ?? eventTypes.map((et) => ({ id: et.eventType, label: formatLabel(et.eventType) })),
+    [typeOptionsOverride, eventTypes],
   );
 
   const scopeOptions = useMemo(() => scopeTypes.map((st) => ({ id: st, label: formatLabel(st) })), [scopeTypes]);
@@ -65,7 +75,7 @@ const ActivityFilters = ({
       </div>
       {typeOptions.length > 0 ? (
         <DropdownFilter
-          title="Type"
+          title={typeFilterTitle}
           options={typeOptions}
           selectedOptions={selectedTypes}
           onSelect={onTypesChange}
@@ -83,7 +93,7 @@ const ActivityFilters = ({
       ) : null}
       {userOptions.length > 0 ? (
         <DropdownFilter
-          title="Users"
+          title={userFilterTitle}
           options={userOptions}
           selectedOptions={selectedUsers}
           onSelect={onUsersChange}

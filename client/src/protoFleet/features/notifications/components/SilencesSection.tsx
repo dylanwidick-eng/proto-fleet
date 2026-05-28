@@ -117,20 +117,20 @@ const SilencesSection = () => {
             )}
           </span>
         ),
-        width: "w-64",
+        width: "w-80",
       },
       window: {
         component: (silence) => (
           <span className="text-text-primary-50">{formatWindow(silence)}</span>
         ),
-        width: "w-80",
+        width: "w-96",
         allowWrap: true,
       },
       reason: {
         component: (silence) => (
           <span className="text-text-primary-50">{silence.comment || "No reason given"}</span>
         ),
-        width: "w-64",
+        width: "w-80",
         allowWrap: true,
       },
     }),
@@ -139,18 +139,20 @@ const SilencesSection = () => {
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border-5 p-6">
-      <div className="flex items-center justify-between">
-        <Header title="Silences" titleSize="text-heading-200" />
-        <Button
-          variant={variants.secondary}
-          size={sizes.compact}
-          text="Add silence"
-          onClick={openAdd}
-        />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <Header title="Silences" titleSize="text-heading-200" />
+          <Button
+            variant={variants.secondary}
+            size={sizes.compact}
+            text="Add silence"
+            onClick={openAdd}
+          />
+        </div>
+        <p className="text-300 text-text-primary-50">
+          Temporary mutes that stop a rule from firing during a maintenance window or planned outage.
+        </p>
       </div>
-      <p className="text-300 text-text-primary-50">
-        Temporary mutes that stop a rule from firing during a maintenance window or planned outage.
-      </p>
 
       <List<SilenceWithActive, string, SilenceColumns>
         items={sortedSilences}
@@ -166,6 +168,8 @@ const SilencesSection = () => {
           </div>
         }
         actions={actions}
+        applyColumnWidthsToCells
+        tableClassName="mb-6 [&_td]:!border-x-0 [&_th]:!border-x-0 [&_td[data-testid='action']>div]:!ml-auto"
       />
 
       <AddSilenceModal

@@ -5,7 +5,8 @@ import NavigationMenu from "../NavigationMenu";
 import { ScheduleApiProvider } from "@/protoFleet/api/ScheduleApiProvider";
 import PageHeader from "@/protoFleet/components/PageHeader";
 import { useSchedulePillData } from "@/protoFleet/components/PageHeader/useSchedulePillData";
-import { primaryNavItems } from "@/protoFleet/config/navItems";
+import { getPrimaryNavItems } from "@/protoFleet/config/navItems";
+import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
 import { usePageBackground } from "@/protoFleet/hooks/usePageBackground";
 import { useReactiveLocalStorage } from "@/shared/hooks/useReactiveLocalStorage";
 import { useWindowDimensions } from "@/shared/hooks/useWindowDimensions";
@@ -21,13 +22,15 @@ const AppLayoutContent = ({ children }: Props) => {
   const [dismissedSetup] = useReactiveLocalStorage<boolean>("completeSetupDismissed");
   const schedulePillData = useSchedulePillData();
   const hasDismissedSetup = Boolean(dismissedSetup);
+  const notificationModel = useNotificationModel();
+  const navItems = getPrimaryNavItems(notificationModel);
 
   const showPhoneWidgets = isPhone && (hasDismissedSetup || schedulePillData.hasVisibleSchedules);
 
   return (
     <div className={clsx("absolute top-0 right-0 bottom-0 left-0", bgClass)}>
       <div className="fixed top-0 z-50 h-fit w-0 laptop:w-16 desktop:w-50">
-        <NavigationMenu items={primaryNavItems} isVisible={isMenuOpen} closeMenu={() => setIsMenuOpen(false)} />
+        <NavigationMenu items={navItems} isVisible={isMenuOpen} closeMenu={() => setIsMenuOpen(false)} />
       </div>
 
       <div

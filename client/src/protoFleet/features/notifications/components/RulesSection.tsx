@@ -145,20 +145,20 @@ const RulesSection = () => {
             ) : null}
           </span>
         ),
-        width: "w-64",
+        width: "w-80",
       },
       when: {
         component: (rule) => (
           <span className="text-text-primary-50">{formatRuleCondition(rule)}</span>
         ),
-        width: "w-80",
+        width: "w-96",
         allowWrap: true,
       },
       then: {
         component: (rule) => (
           <span className="text-text-primary-50">{formatRuleChannels(rule, channels)}</span>
         ),
-        width: "w-64",
+        width: "w-80",
         allowWrap: true,
       },
     }),
@@ -167,19 +167,21 @@ const RulesSection = () => {
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border-5 p-6">
-      <div className="flex items-center justify-between">
-        <Header title="Rules" titleSize="text-heading-200" />
-        <Button
-          variant={variants.secondary}
-          size={sizes.compact}
-          text="Add rule"
-          onClick={openAdd}
-        />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <Header title="Rules" titleSize="text-heading-200" />
+          <Button
+            variant={variants.secondary}
+            size={sizes.compact}
+            text="Add rule"
+            onClick={openAdd}
+          />
+        </div>
+        <p className="text-300 text-text-primary-50">
+          Conditions that decide when a notification fires and how it's scoped (site, building, rack,
+          group, pool, or schedule).
+        </p>
       </div>
-      <p className="text-300 text-text-primary-50">
-        Conditions that decide when a notification fires and how it's scoped (site, building, rack,
-        group, pool, or schedule).
-      </p>
 
       <List<Rule, string, RuleColumns>
         items={sortedRules}
@@ -195,6 +197,8 @@ const RulesSection = () => {
           </div>
         }
         actions={actions}
+        applyColumnWidthsToCells
+        tableClassName="mb-6 [&_td]:!border-x-0 [&_th]:!border-x-0 [&_td[data-testid='action']>div]:!ml-auto"
       />
 
       <AddRuleModal

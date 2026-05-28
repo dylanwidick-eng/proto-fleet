@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 
-import { Activity, Fleet, Groups, Home, IconProps, Racks, Settings } from "@/shared/assets/icons";
+import type { NotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
+import { Activity, Fleet, Groups, Home, IconProps, Notification, Racks, Settings } from "@/shared/assets/icons";
 
 export interface NavItem {
   path: string;
@@ -48,6 +49,19 @@ export const primaryNavItems: NavItem[] = [
     icon: Settings,
   },
 ];
+
+// Returns the primary nav with a "Notifications" entry inserted after Activity when M4 is active.
+export const getPrimaryNavItems = (notificationModel: NotificationModel): NavItem[] => {
+  if (notificationModel !== "m3") return primaryNavItems;
+  const activityIdx = primaryNavItems.findIndex((i) => i.path === "/activity");
+  if (activityIdx < 0) return primaryNavItems;
+  const insertAt = activityIdx + 1;
+  return [
+    ...primaryNavItems.slice(0, insertAt),
+    { path: "/notifications", label: "Notifications", icon: Notification },
+    ...primaryNavItems.slice(insertAt),
+  ];
+};
 
 // Secondary navigation items (shown in settings submenu)
 export const secondaryNavItems: SecondaryNavItem[] = [
