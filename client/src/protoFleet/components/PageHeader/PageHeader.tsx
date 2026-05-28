@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import LocationSelector from "./LocationSelector";
 import SchedulePill from "./SchedulePill";
@@ -62,13 +63,16 @@ const PageHeader = ({ isMenuOpen, openMenu, schedulePillData }: PageHeaderProps)
   const hasDismissedSetup = Boolean(dismissedSetup);
   const notificationModel = useNotificationModel();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleCompleteSetup = () => {
     setDismissedSetup(false);
   };
 
   const handleBellClick = () => {
-    if (notificationModel === "m2") setDrawerOpen(true);
+    if (notificationModel === "m1") navigate("/activity");
+    else if (notificationModel === "m2") setDrawerOpen(true);
+    else if (notificationModel === "m3") navigate("/notifications");
   };
 
   const headerWidgetsProps = {
