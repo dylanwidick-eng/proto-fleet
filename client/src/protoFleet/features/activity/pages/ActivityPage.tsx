@@ -10,6 +10,7 @@ import ActivityFilters from "@/protoFleet/features/activity/components/ActivityF
 import { formatLabel } from "@/protoFleet/features/activity/utils/formatLabel";
 import UnifiedActivityFeed from "@/protoFleet/features/notifications/components/UnifiedActivityFeed";
 import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
+import { getSeedActivities } from "@/protoFleet/features/notifications/lib/seedActivities";
 import { getSeedNotificationActivity } from "@/protoFleet/features/notifications/lib/seedNotificationActivity";
 import { Alert, DismissTiny } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
@@ -191,13 +192,19 @@ const ActivityPage = () => {
         </div>
       </div>
 
-      {error ? (
+      {error && import.meta.env.VITE_DEMO_MODE !== "1" ? (
         <Callout className="mx-6 mb-4 laptop:mx-10" intent="danger" prefixIcon={<Alert />} title={error} />
       ) : null}
 
       <div className="p-6 pt-0 laptop:p-10 laptop:pt-0">
         <UnifiedActivityFeed
-          activities={showActivities ? activities : []}
+          activities={
+            showActivities
+              ? import.meta.env.VITE_DEMO_MODE === "1"
+                ? [...activities, ...getSeedActivities()]
+                : activities
+              : []
+          }
           notifications={showNotifications ? getSeedNotificationActivity() : []}
           noDataElement={
             isLoading ? (
