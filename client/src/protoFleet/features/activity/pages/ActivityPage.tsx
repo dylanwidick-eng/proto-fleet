@@ -10,7 +10,11 @@ import ActivityFilters from "@/protoFleet/features/activity/components/ActivityF
 import { formatLabel } from "@/protoFleet/features/activity/utils/formatLabel";
 import UnifiedActivityFeed from "@/protoFleet/features/notifications/components/UnifiedActivityFeed";
 import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
-import { getSeedActivities } from "@/protoFleet/features/notifications/lib/seedActivities";
+import {
+  getSeedActivities,
+  getSeedScopeTypes,
+  getSeedUserOptions,
+} from "@/protoFleet/features/notifications/lib/seedActivities";
 import { getSeedNotificationActivity } from "@/protoFleet/features/notifications/lib/seedNotificationActivity";
 import { Alert, DismissTiny } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
@@ -165,8 +169,14 @@ const ActivityPage = () => {
             searchValue={searchText}
             onSearchChange={handleSearchChange}
             eventTypes={augmentedEventTypes}
-            scopeTypes={scopeTypes}
-            users={users}
+            scopeTypes={
+              import.meta.env.VITE_DEMO_MODE === "1" && scopeTypes.length === 0
+                ? getSeedScopeTypes()
+                : scopeTypes
+            }
+            users={
+              import.meta.env.VITE_DEMO_MODE === "1" && users.length === 0 ? getSeedUserOptions() : users
+            }
             selectedTypes={selectedTypes}
             selectedScopes={selectedScopes}
             selectedUsers={selectedUsers}

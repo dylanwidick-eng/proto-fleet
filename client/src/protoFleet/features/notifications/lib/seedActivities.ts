@@ -1,7 +1,23 @@
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 
-import { ActivityEntrySchema, type ActivityEntry } from "@/protoFleet/api/generated/activity/v1/activity_pb";
+import {
+  ActivityEntrySchema,
+  UserOptionSchema,
+  type ActivityEntry,
+  type UserOption,
+} from "@/protoFleet/api/generated/activity/v1/activity_pb";
+
+export function getSeedScopeTypes(): string[] {
+  return ["fleet", "site", "building", "rack", "group", "device", "pool", "schedule"];
+}
+
+export function getSeedUserOptions(): UserOption[] {
+  return [
+    create(UserOptionSchema, { userId: "u_guccimane", username: "guccimane" }),
+    create(UserOptionSchema, { userId: "u_dwidick", username: "dwidick" }),
+  ];
+}
 
 const minutesAgo = (m: number) => BigInt(Math.floor((Date.now() - m * 60 * 1000) / 1000));
 
