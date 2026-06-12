@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import LocationSelector from "./LocationSelector";
 import SchedulePill from "./SchedulePill";
 import type { UseSchedulePillDataResult } from "./useSchedulePillData";
 import { usePageBackground } from "@/protoFleet/hooks/usePageBackground";
 import NotificationDrawer from "@/protoFleet/features/notifications/components/NotificationDrawer";
-import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
 import { Notification, Pause } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import { useReactiveLocalStorage } from "@/shared/hooks/useReactiveLocalStorage";
@@ -61,18 +59,14 @@ const PageHeader = ({ isMenuOpen, openMenu, schedulePillData }: PageHeaderProps)
   const { bgClass } = usePageBackground();
   const [dismissedSetup, setDismissedSetup] = useReactiveLocalStorage<boolean>("completeSetupDismissed");
   const hasDismissedSetup = Boolean(dismissedSetup);
-  const notificationModel = useNotificationModel();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const navigate = useNavigate();
 
   const handleCompleteSetup = () => {
     setDismissedSetup(false);
   };
 
   const handleBellClick = () => {
-    if (notificationModel === "m1") navigate("/activity");
-    else if (notificationModel === "m2") setDrawerOpen(true);
-    else if (notificationModel === "m3") navigate("/notifications");
+    setDrawerOpen(true);
   };
 
   const headerWidgetsProps = {

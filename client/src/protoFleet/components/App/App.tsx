@@ -8,7 +8,6 @@ import { requiresAuth } from "@/protoFleet/router";
 import { useCheckAuthentication, useIsActionBarVisible } from "@/protoFleet/store";
 import { useDeviceTheme, useSetDeviceTheme, useTheme } from "@/protoFleet/store";
 import { redirectFromFleetDown } from "@/protoFleet/utils/fleetDownRedirect";
-import DemoModelPicker from "@/protoFleet/features/notifications/components/DemoModelPicker";
 import ErrorBoundary from "@/shared/components/ErrorBoundary";
 import ProgressCircular from "@/shared/components/ProgressCircular";
 import { useApplyTheme } from "@/shared/features/preferences";
@@ -115,8 +114,6 @@ const App = ({ children, fullscreen }: AppProps) => {
       >
         <Toaster />
       </div>
-
-      <DemoModelPicker />
 
       <Suspense
         fallback={

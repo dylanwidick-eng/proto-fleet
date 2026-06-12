@@ -12,12 +12,15 @@ export interface QuickWindowOption extends PickerOption {
   hours: number;
 }
 
+export const INDEFINITE_QUICK_ID = "indefinite";
+
 export const SILENCE_QUICK_OPTIONS: QuickWindowOption[] = [
   { id: "1h", label: "1 hour", hours: 1 },
   { id: "4h", label: "4 hours", hours: 4 },
   { id: "8h", label: "8 hours", hours: 8 },
   { id: "24h", label: "1 day", hours: 24 },
   { id: "72h", label: "3 days", hours: 72 },
+  { id: INDEFINITE_QUICK_ID, label: "Indefinite", hours: 0 },
 ];
 
 // Convert a Date to a string usable in <input type="datetime-local">.

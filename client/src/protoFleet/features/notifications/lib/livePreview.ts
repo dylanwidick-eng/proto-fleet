@@ -1,3 +1,4 @@
+import { renderAlertEmail } from "@/protoFleet/features/notifications/lib/emailTemplate";
 import { RULE_SCOPE_TARGET_LABELS } from "@/protoFleet/features/notifications/lib/ruleTemplates";
 import type { NotificationSeverity } from "@/protoFleet/features/notifications/lib/seedNotificationActivity";
 import type { RuleScopeKind, RuleTemplate } from "@/protoFleet/features/notifications/types";
@@ -10,6 +11,8 @@ export interface LivePreviewInput {
   thresholdDuration: string;
   channelNames: string[];
   customExpr: string;
+  ruleName?: string;
+  recipientNames?: string[];
 }
 
 export interface LivePreview {
@@ -19,6 +22,8 @@ export interface LivePreview {
   slack: string;
   sms: string;
   channelsDelivered: string;
+  /** Full rendered HTML email, for a rich preview in an iframe. */
+  emailHtml: string;
 }
 
 const SEVERITY_EMOJI: Record<NotificationSeverity, string> = {
@@ -177,12 +182,23 @@ export const getLivePreview = (input: LivePreviewInput): LivePreview => {
       : input.channelNames.length === 1
         ? input.channelNames[0]
         : input.channelNames.slice(0, -1).join(", ") + " and " + input.channelNames[input.channelNames.length - 1];
+  const slack = `${SEVERITY_EMOJI[severity]} ${severity.toUpperCase()}: ${composed.slack}`;
+  const emailHtml = renderAlertEmail({
+    subject,
+    headline: composed.summary,
+    scopePhrase: scopePhrase(input.scope, input.scopeTargetLabel),
+    severity,
+    ruleName: input.ruleName,
+    channelNames: input.channelNames,
+    recipientNames: input.recipientNames,
+  });
   return {
     severity,
     subject,
     summary: composed.summary,
-    slack: composed.slack,
+    slack,
     sms: composed.sms,
     channelsDelivered,
+    emailHtml,
   };
 };

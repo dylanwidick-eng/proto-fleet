@@ -1,15 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import SinglePickerField from "./SinglePickerField";
 import {
+  INDEFINITE_QUICK_ID,
   SILENCE_QUICK_OPTIONS,
   SILENCE_SCOPE_OPTIONS,
   toLocalDatetimeValue,
 } from "@/protoFleet/features/notifications/lib/silenceOptions";
 import { useNotificationsStore } from "@/protoFleet/features/notifications/store/notificationsStore";
-import type {
-  SilenceScopeKind,
-  SilenceWithActive,
-} from "@/protoFleet/features/notifications/types";
+import type { SilenceScopeKind, SilenceWithActive } from "@/protoFleet/features/notifications/types";
 import { Alert } from "@/shared/assets/icons";
 import { variants } from "@/shared/components/Button";
 import Callout from "@/shared/components/Callout";
@@ -23,6 +21,7 @@ interface AddSilenceModalProps {
   // When opening from a rule row action, pre-pick that rule.
   prefillRuleId?: string | null;
   onDismiss: () => void;
+  onBack?: () => void;
 }
 
 const newSilenceId = () => `sil_${Date.now().toString(36)}`;
@@ -35,12 +34,7 @@ const computeEndsFromQuick = (quick: string): Date => {
   return new Date(Date.now() + hours * 3600 * 1000);
 };
 
-const AddSilenceModal = ({
-  open,
-  editingSilence,
-  prefillRuleId,
-  onDismiss,
-}: AddSilenceModalProps) => {
+const AddSilenceModal = ({ open, editingSilence, prefillRuleId, onDismiss, onBack }: AddSilenceModalProps) => {
   const rules = useNotificationsStore((s) => s.rules);
   const appendSilence = useNotificationsStore((s) => s.appendSilence);
   const updateSilence = useNotificationsStore((s) => s.updateSilence);
@@ -52,7 +46,6 @@ const AddSilenceModal = ({
   const [quick, setQuick] = useState<string | null>(DEFAULT_QUICK);
   const [starts, setStarts] = useState("");
   const [ends, setEnds] = useState("");
-  const [comment, setComment] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
   const [syncedFor, setSyncedFor] = useState<string | null>(null);
@@ -66,7 +59,6 @@ const AddSilenceModal = ({
         setQuick(null); // Editing: no quick window preset, show explicit datetimes.
         setStarts(toLocalDatetimeValue(new Date(editingSilence.starts_at)));
         setEnds(editingSilence.ends_at ? toLocalDatetimeValue(new Date(editingSilence.ends_at)) : "");
-        setComment(editingSilence.comment);
         setErrorMsg("");
       } else {
         const now = new Date();
@@ -76,7 +68,6 @@ const AddSilenceModal = ({
         setQuick(DEFAULT_QUICK);
         setStarts(toLocalDatetimeValue(now));
         setEnds(toLocalDatetimeValue(end));
-        setComment("");
         setErrorMsg("");
       }
     }
@@ -89,9 +80,13 @@ const AddSilenceModal = ({
   const handleQuickChange = useCallback((next: string) => {
     setQuick(next);
     const now = new Date();
-    const end = computeEndsFromQuick(next);
     setStarts(toLocalDatetimeValue(now));
-    setEnds(toLocalDatetimeValue(end));
+    if (next === INDEFINITE_QUICK_ID) {
+      setEnds("");
+    } else {
+      const end = computeEndsFromQuick(next);
+      setEnds(toLocalDatetimeValue(end));
+    }
     clearError();
   }, []);
 
@@ -109,11 +104,12 @@ const AddSilenceModal = ({
   };
 
   const handleSave = useCallback(() => {
-    if (!starts || !ends) {
+    const isIndefinite = quick === INDEFINITE_QUICK_ID;
+    if (!starts || (!isIndefinite && !ends)) {
       setErrorMsg("Pick a start and end time");
       return;
     }
-    if (new Date(ends) <= new Date(starts)) {
+    if (!isIndefinite && new Date(ends) <= new Date(starts)) {
       setErrorMsg("End must be after start");
       return;
     }
@@ -134,8 +130,8 @@ const AddSilenceModal = ({
         device_ids: scope === "device" ? [] : [],
       },
       starts_at: new Date(starts).toISOString(),
-      ends_at: new Date(ends).toISOString(),
-      comment: comment.trim(),
+      ends_at: quick === INDEFINITE_QUICK_ID ? null : new Date(ends).toISOString(),
+      comment: "",
     };
 
     if (isEditing && editingSilence) {
@@ -152,26 +148,25 @@ const AddSilenceModal = ({
       pushToast({ message: "Silence saved", status: STATUSES.success });
     }
     onDismiss();
-  }, [
-    starts,
-    ends,
-    scope,
-    ruleId,
-    comment,
-    isEditing,
-    editingSilence,
-    appendSilence,
-    updateSilence,
-    onDismiss,
-  ]);
+  }, [starts, ends, quick, scope, ruleId, isEditing, editingSilence, appendSilence, updateSilence, onDismiss]);
 
   return (
     <Modal
       open={open}
       onDismiss={onDismiss}
-      title={isEditing ? "Edit silence" : "Add silence"}
+      title={isEditing ? "Edit maintenance window" : "Maintenance window"}
       description="Mute alerts during planned work. Silenced events still record to the activity log so you can audit what would have fired."
       buttons={[
+        ...(onBack
+          ? [
+              {
+                text: "Back",
+                onClick: onBack,
+                variant: variants.secondary,
+                dismissModalOnClick: false,
+              },
+            ]
+          : []),
         {
           text: "Save silence",
           onClick: handleSave,
@@ -230,22 +225,13 @@ const AddSilenceModal = ({
           />
           <Input
             id="silence-ends"
-            label="Ends"
+            label={quick === INDEFINITE_QUICK_ID ? "Ends (indefinite)" : "Ends"}
             type="datetime-local"
             initValue={ends}
             onChange={handleEndsChange}
+            disabled={quick === INDEFINITE_QUICK_ID}
           />
         </div>
-
-        <Input
-          id="silence-comment"
-          label="Reason"
-          initValue={comment}
-          onChange={(value) => {
-            setComment(value);
-            clearError();
-          }}
-        />
       </div>
     </Modal>
   );

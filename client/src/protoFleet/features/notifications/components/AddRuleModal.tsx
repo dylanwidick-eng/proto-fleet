@@ -1,17 +1,17 @@
 import { useCallback, useMemo, useState } from "react";
 import RuleChannelsField from "./RuleChannelsField";
 import RuleLivePreview from "./RuleLivePreview";
+import RuleRecipientsField from "./RuleRecipientsField";
 import SinglePickerField from "./SinglePickerField";
-import { useNotificationsStore } from "@/protoFleet/features/notifications/store/notificationsStore";
 import { getLivePreview } from "@/protoFleet/features/notifications/lib/livePreview";
 import {
-  FLEET_METRICS,
   RULE_SCOPE_LABELS,
   RULE_SCOPE_NO_TARGET,
   RULE_SCOPE_TARGET_LABELS,
   RULE_TEMPLATES,
 } from "@/protoFleet/features/notifications/lib/ruleTemplates";
 import { getRuleScopeTargets } from "@/protoFleet/features/notifications/lib/scopeTargets";
+import { selectUsers, useNotificationsStore } from "@/protoFleet/features/notifications/store/notificationsStore";
 import type { Rule, RuleScopeKind, RuleTemplate } from "@/protoFleet/features/notifications/types";
 import { Alert } from "@/shared/assets/icons";
 import { variants } from "@/shared/components/Button";
@@ -19,13 +19,14 @@ import Callout from "@/shared/components/Callout";
 import Input from "@/shared/components/Input";
 import Modal from "@/shared/components/Modal";
 import Select from "@/shared/components/Select";
-import Textarea from "@/shared/components/Textarea";
+import Switch from "@/shared/components/Switch";
 import { pushToast, STATUSES } from "@/shared/features/toaster";
 
 interface AddRuleModalProps {
   open: boolean;
   editingRule: Rule | null;
   onDismiss: () => void;
+  onBack?: () => void;
 }
 
 const newRuleId = () => `rul_${Date.now().toString(36)}`;
@@ -37,8 +38,9 @@ const SCOPE_OPTIONS = (Object.keys(RULE_SCOPE_LABELS) as RuleScopeKind[]).map((k
 
 const TEMPLATE_OPTIONS = RULE_TEMPLATES.map((t) => ({ value: t.id, label: t.label }));
 
-const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
+const AddRuleModal = ({ open, editingRule, onDismiss, onBack }: AddRuleModalProps) => {
   const channels = useNotificationsStore((s) => s.channels);
+  const users = useNotificationsStore(selectUsers);
   const appendRule = useNotificationsStore((s) => s.appendRule);
   const updateRule = useNotificationsStore((s) => s.updateRule);
 
@@ -50,8 +52,9 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
   const [scopeTarget, setScopeTarget] = useState<string | null>(null);
   const [thresholdValue, setThresholdValue] = useState("");
   const [thresholdDuration, setThresholdDuration] = useState("300");
-  const [customExpr, setCustomExpr] = useState("");
   const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [createTicket, setCreateTicket] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [step, setStep] = useState<"form" | "preview">("form");
 
@@ -59,7 +62,7 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
 
   // Sync form state when the modal opens (init from editing rule, or reset to defaults).
   const [syncedFor, setSyncedFor] = useState<string | null>(null);
-  const syncKey = open ? editingRule?.id ?? "__add__" : null;
+  const syncKey = open ? (editingRule?.id ?? "__add__") : null;
   if (syncedFor !== syncKey) {
     setSyncedFor(syncKey);
     if (!open) {
@@ -71,8 +74,9 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
       setScopeTarget(editingRule.scope.target_id ?? editingRule.scope.group_id ?? null);
       setThresholdValue(editingRule.threshold.value != null ? String(editingRule.threshold.value) : "");
       setThresholdDuration(String(editingRule.threshold.duration_seconds ?? 300));
-      setCustomExpr(editingRule.custom_expr ?? "");
       setSelectedChannelIds(editingRule.channel_ids ?? []);
+      setSelectedUserIds(editingRule.recipient_user_ids ?? []);
+      setCreateTicket(editingRule.create_ticket ?? false);
       setErrorMsg("");
       setStep("form");
     } else {
@@ -82,8 +86,9 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
       setScopeTarget(null);
       setThresholdValue("");
       setThresholdDuration("300");
-      setCustomExpr("");
       setSelectedChannelIds(channels.length > 0 ? [channels[0].id] : []);
+      setSelectedUserIds([]);
+      setCreateTicket(false);
       setErrorMsg("");
       setStep("form");
     }
@@ -116,6 +121,11 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
     clearError();
   };
 
+  const toggleUser = (userId: string) => {
+    setSelectedUserIds((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+    clearError();
+  };
+
   const validateAndPreview = useCallback(() => {
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -135,9 +145,7 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
     }
 
     const duration = parseInt(thresholdDuration, 10) || 0;
-    const value =
-      template === "custom" ? null : thresholdValue ? parseFloat(thresholdValue) || null : null;
-    const expr = template === "custom" ? customExpr.trim() : null;
+    const value = thresholdValue ? parseFloat(thresholdValue) || null : null;
     const targetId = RULE_SCOPE_NO_TARGET.has(scope) ? null : scopeTarget;
 
     const partial = {
@@ -154,8 +162,10 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
         value,
         comparator: tplMeta?.comparator ?? null,
       },
-      custom_expr: expr,
+      custom_expr: null,
       channel_ids: selectedChannelIds,
+      recipient_user_ids: selectedUserIds,
+      create_ticket: createTicket,
       updated_at: new Date().toISOString(),
     };
 
@@ -185,8 +195,9 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
     scopeTarget,
     thresholdValue,
     thresholdDuration,
-    customExpr,
     selectedChannelIds,
+    selectedUserIds,
+    createTicket,
     tplMeta,
     isEditing,
     editingRule,
@@ -203,6 +214,9 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
     const channelNames = selectedChannelIds
       .map((id) => channels.find((c) => c.id === id)?.name)
       .filter((n): n is string => Boolean(n));
+    const recipientNames = selectedUserIds
+      .map((id) => users.find((u) => u.id === id)?.name)
+      .filter((n): n is string => Boolean(n));
     return getLivePreview({
       template,
       scope,
@@ -210,9 +224,23 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
       thresholdValue,
       thresholdDuration,
       channelNames,
-      customExpr,
+      customExpr: "",
+      ruleName: name.trim() || undefined,
+      recipientNames,
     });
-  }, [template, scope, scopeTarget, scopeTargets, thresholdValue, thresholdDuration, selectedChannelIds, channels, customExpr]);
+  }, [
+    template,
+    scope,
+    scopeTarget,
+    scopeTargets,
+    thresholdValue,
+    thresholdDuration,
+    selectedChannelIds,
+    channels,
+    selectedUserIds,
+    users,
+    name,
+  ]);
 
   const previewButtons = [
     {
@@ -230,6 +258,16 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
   ];
 
   const formButtons = [
+    ...(onBack
+      ? [
+          {
+            text: "Back",
+            onClick: onBack,
+            variant: variants.secondary,
+            dismissModalOnClick: false,
+          },
+        ]
+      : []),
     {
       text: "Save rule",
       onClick: validateAndPreview,
@@ -246,7 +284,7 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
       description={
         step === "preview"
           ? "Confirm this is what your notification will look like across channels."
-          : "Start from a template or write your own PromQL. The server scopes everything to this org automatically."
+          : "Define when an alert fires and who gets notified. Start from a template and adjust the threshold to fit your fleet."
       }
       buttons={step === "preview" ? previewButtons : formButtons}
       divider={false}
@@ -256,110 +294,77 @@ const AddRuleModal = ({ open, editingRule, onDismiss }: AddRuleModalProps) => {
       {step === "preview" ? (
         <RuleLivePreview preview={livePreview} />
       ) : (
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Select
-            id="rule-template"
-            label="Template"
-            value={template}
-            options={TEMPLATE_OPTIONS}
-            onChange={handleTemplateChange}
-          />
-          <Input
-            id="rule-name"
-            label="Name"
-            initValue={name}
-            onChange={(value) => {
-              setName(value);
-              clearError();
-            }}
-            autoFocus
-          />
-        </div>
-
-        {template === "custom" ? (
-          <>
-            <Textarea
-              id="rule-custom-expr"
-              label="PromQL expression"
-              initValue={customExpr}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              id="rule-template"
+              label="Template"
+              value={template}
+              options={TEMPLATE_OPTIONS}
+              onChange={handleTemplateChange}
+            />
+            <Input
+              id="rule-name"
+              label="Name"
+              initValue={name}
               onChange={(value) => {
-                setCustomExpr(value);
+                setName(value);
                 clearError();
               }}
-              rows={3}
+              autoFocus
             />
-            <p className="text-200 text-text-primary-50">
-              Server injects organization_id automatically. Only metrics in the{" "}
-              <code className="rounded bg-surface-5 px-1 font-mono">fleet_</code> namespace are allowed.
-            </p>
-            <details className="rounded-xl border border-border-5 p-3">
-              <summary className="cursor-pointer text-emphasis-300 text-text-primary">
-                Available metrics
-              </summary>
-              <div className="mt-3 flex flex-col gap-2">
-                {FLEET_METRICS.map((m) => (
-                  <div key={m.name} className="flex flex-col">
-                    <span className="font-mono text-300 text-text-primary">{m.name}</span>
-                    <span className="text-200 text-text-primary-50">
-                      {m.type} · {m.unit} · labels: {m.labels.join(", ")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </details>
-          </>
-        ) : (
-          <>
-            <Select
-              id="rule-scope"
-              label="Scope"
-              value={scope}
-              options={SCOPE_OPTIONS}
-              onChange={handleScopeChange}
-            />
-            {showTarget ? (
-              <SinglePickerField
-                id="rule-scope-target"
-                label={RULE_SCOPE_TARGET_LABELS[scope] ?? "Target"}
-                options={scopeTargets}
-                value={scopeTarget}
-                emptyMessage={`No ${(RULE_SCOPE_TARGET_LABELS[scope] ?? "target").toLowerCase()}s yet`}
-                onChange={(value) => {
-                  setScopeTarget(value);
-                  clearError();
-                }}
-              />
-            ) : null}
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                id="rule-threshold-value"
-                label="Threshold"
-                initValue={thresholdValue}
-                onChange={(value) => {
-                  setThresholdValue(value);
-                  clearError();
-                }}
-              />
-              <Input
-                id="rule-threshold-duration"
-                label="Sustained for (seconds)"
-                initValue={thresholdDuration}
-                onChange={(value) => {
-                  setThresholdDuration(value);
-                  clearError();
-                }}
-              />
-            </div>
-          </>
-        )}
+          </div>
 
-        <RuleChannelsField
-          channels={channels}
-          selectedIds={selectedChannelIds}
-          onToggle={toggleChannel}
-        />
-      </div>
+          <Select id="rule-scope" label="Scope" value={scope} options={SCOPE_OPTIONS} onChange={handleScopeChange} />
+          {showTarget ? (
+            <SinglePickerField
+              id="rule-scope-target"
+              label={RULE_SCOPE_TARGET_LABELS[scope] ?? "Target"}
+              options={scopeTargets}
+              value={scopeTarget}
+              emptyMessage={`No ${(RULE_SCOPE_TARGET_LABELS[scope] ?? "target").toLowerCase()}s yet`}
+              onChange={(value) => {
+                setScopeTarget(value);
+                clearError();
+              }}
+            />
+          ) : null}
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              id="rule-threshold-value"
+              label="Threshold"
+              initValue={thresholdValue}
+              onChange={(value) => {
+                setThresholdValue(value);
+                clearError();
+              }}
+            />
+            <Input
+              id="rule-threshold-duration"
+              label="Sustained for (seconds)"
+              initValue={thresholdDuration}
+              onChange={(value) => {
+                setThresholdDuration(value);
+                clearError();
+              }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <RuleChannelsField channels={channels} selectedIds={selectedChannelIds} onToggle={toggleChannel} />
+            <RuleRecipientsField users={users} selectedIds={selectedUserIds} onToggle={toggleUser} />
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="text-300 text-text-primary">Create ticket</span>
+              <span className="text-200 text-text-primary-50">
+                Open a repair ticket automatically when this rule fires.
+              </span>
+            </div>
+            <Switch checked={createTicket} setChecked={setCreateTicket} />
+          </div>
+        </div>
       )}
     </Modal>
   );

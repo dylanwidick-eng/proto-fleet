@@ -77,8 +77,9 @@ const NotificationDrawer = ({ open, onDismiss }: NotificationDrawerProps) => {
   }
 
   return (
-    <Modal open={open} onDismiss={onDismiss} title="Notifications" divider={false}>
+    <Modal open={open} onDismiss={onDismiss} divider={false}>
       <div className="flex flex-col">
+        <div className="mb-4 text-heading-300 text-text-primary">Notifications</div>
         <div className="flex gap-1 border-b border-surface-10">
           {(["unread", "all"] as const).map((t) => (
             <button

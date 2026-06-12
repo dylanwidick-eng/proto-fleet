@@ -1,8 +1,15 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
-import type { Channel, Rule, Silence, SilenceWithActive } from "../types";
+import type { Channel, NotificationUser, Rule, Silence, SilenceWithActive } from "../types";
 
 const ORG_ID = "org_local_dev";
+
+const seedUsers: NotificationUser[] = [
+  { id: "u_guccimane", name: "guccimane" },
+  { id: "u_dwidick", name: "dwidick" },
+  { id: "u_jchang", name: "Ryan Chang" },
+  { id: "u_oncall", name: "On-call rotation" },
+];
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3600 * 1000).toISOString();
 const hoursAhead = (h: number) => new Date(Date.now() + h * 3600 * 1000).toISOString();
@@ -213,6 +220,7 @@ interface NotificationsState {
   channels: Channel[];
   rules: Rule[];
   silences: Silence[];
+  users: NotificationUser[];
 
   // Channels
   appendChannel: (channel: Channel) => void;
@@ -235,6 +243,7 @@ export const useNotificationsStore = create<NotificationsState>()(
     channels: seedChannels,
     rules: seedRules,
     silences: seedSilences,
+    users: seedUsers,
 
     appendChannel: (channel) =>
       set((state) => {
@@ -294,6 +303,7 @@ export const useNotificationsStore = create<NotificationsState>()(
 export const selectChannels = (s: NotificationsState) => s.channels;
 export const selectRules = (s: NotificationsState) => s.rules;
 export const selectSilences = (s: NotificationsState) => s.silences;
+export const selectUsers = (s: NotificationsState) => s.users;
 
 // Pure helper exported alongside the store so components can derive `active`
 // on the silence row inside their own useMemo.

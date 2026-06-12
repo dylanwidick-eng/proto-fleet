@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { create } from "@bufbuild/protobuf";
 
-import { ActivityFilterSchema, EventTypeOptionSchema } from "@/protoFleet/api/generated/activity/v1/activity_pb";
+import { ActivityFilterSchema } from "@/protoFleet/api/generated/activity/v1/activity_pb";
 import { useActivity } from "@/protoFleet/api/useActivity";
 import { useActivityFilterOptions } from "@/protoFleet/api/useActivityFilterOptions";
 import { useExportActivity } from "@/protoFleet/api/useExportActivity";
@@ -9,13 +9,11 @@ import NoFilterResultsEmptyState from "@/protoFleet/components/NoFilterResultsEm
 import ActivityFilters from "@/protoFleet/features/activity/components/ActivityFilters";
 import { formatLabel } from "@/protoFleet/features/activity/utils/formatLabel";
 import UnifiedActivityFeed from "@/protoFleet/features/notifications/components/UnifiedActivityFeed";
-import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
 import {
   getSeedActivities,
   getSeedScopeTypes,
   getSeedUserOptions,
 } from "@/protoFleet/features/notifications/lib/seedActivities";
-import { getSeedNotificationActivity } from "@/protoFleet/features/notifications/lib/seedNotificationActivity";
 import { Alert, DismissTiny } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import Callout from "@/shared/components/Callout";
@@ -24,10 +22,8 @@ import ProgressCircular from "@/shared/components/ProgressCircular";
 import { debounce } from "@/shared/utils/utility";
 
 const PAGE_SIZE = 50;
-const NOTIFICATION_TYPE_ID = "notification";
 
 const ActivityPage = () => {
-  const notificationModel = useNotificationModel();
   const [searchText, setSearchText] = useState("");
   const [debouncedSearchText, setDebouncedSearchText] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -50,28 +46,16 @@ const ActivityPage = () => {
     [debouncedSetSearch],
   );
 
-  const backendTypes = useMemo(
-    () => selectedTypes.filter((t) => t !== NOTIFICATION_TYPE_ID),
-    [selectedTypes],
-  );
-
   const filter = useMemo(
     () =>
       create(ActivityFilterSchema, {
-        eventTypes: backendTypes,
+        eventTypes: selectedTypes,
         scopeTypes: selectedScopes,
         userIds: selectedUsers,
         searchText: debouncedSearchText,
       }),
-    [backendTypes, selectedScopes, selectedUsers, debouncedSearchText],
+    [selectedTypes, selectedScopes, selectedUsers, debouncedSearchText],
   );
-
-  // M2 (bell modal) and M3 (own page) host notifications elsewhere. Activity stays upstream-shaped.
-  const showNotifications =
-    notificationModel === "m2" || notificationModel === "m3"
-      ? false
-      : selectedTypes.length === 0 || selectedTypes.includes(NOTIFICATION_TYPE_ID);
-  const showActivities = true;
 
   const { activities, totalCount, isLoading, error, hasMore, loadMore } = useActivity({
     filter,
@@ -79,17 +63,6 @@ const ActivityPage = () => {
   });
   const { exportCsv, isExportingCsv } = useExportActivity();
   const { eventTypes, scopeTypes, users } = useActivityFilterOptions();
-
-  const augmentedEventTypes = useMemo(
-    () =>
-      notificationModel === "m2" || notificationModel === "m3"
-        ? eventTypes
-        : [
-            create(EventTypeOptionSchema, { eventType: NOTIFICATION_TYPE_ID, eventCategory: "notification" }),
-            ...eventTypes,
-          ],
-    [eventTypes, notificationModel],
-  );
 
   const hasStartedLoadingRef = useRef(false);
   const hasLoadedRef = useRef(false);
@@ -168,7 +141,7 @@ const ActivityPage = () => {
           <ActivityFilters
             searchValue={searchText}
             onSearchChange={handleSearchChange}
-            eventTypes={augmentedEventTypes}
+            eventTypes={eventTypes}
             scopeTypes={
               import.meta.env.VITE_DEMO_MODE === "1" && scopeTypes.length === 0
                 ? getSeedScopeTypes()
@@ -209,13 +182,9 @@ const ActivityPage = () => {
       <div className="p-6 pt-0 laptop:p-10 laptop:pt-0">
         <UnifiedActivityFeed
           activities={
-            showActivities
-              ? import.meta.env.VITE_DEMO_MODE === "1"
-                ? [...activities, ...getSeedActivities()]
-                : activities
-              : []
+            import.meta.env.VITE_DEMO_MODE === "1" ? [...activities, ...getSeedActivities()] : activities
           }
-          notifications={showNotifications ? getSeedNotificationActivity() : []}
+          notifications={[]}
           noDataElement={
             isLoading ? (
               <></>

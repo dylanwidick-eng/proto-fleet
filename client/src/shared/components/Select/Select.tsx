@@ -8,6 +8,10 @@ import Radio from "@/shared/components/Radio";
 import { type Position, positions } from "@/shared/constants";
 
 const popoverViewportPadding = minimalMargin * 2;
+// Prefer opening below; only flip above when the space below truly can't fit a
+// reasonable list. Mirrors RuleMultiSelectField / SinglePickerField so dropdown
+// direction stays consistent across the app.
+const minOpenBelowHeight = 240;
 
 interface SelectOption {
   value: string;
@@ -59,7 +63,7 @@ const SelectContent = ({ id, label, options, value, onChange, disabled, error, t
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
       const spaceAbove = triggerRect.top - popoverViewportPadding;
       const spaceBelow = viewportHeight - triggerRect.bottom - popoverViewportPadding;
-      const shouldOpenAbove = spaceAbove > spaceBelow;
+      const shouldOpenAbove = spaceBelow < minOpenBelowHeight && spaceAbove > spaceBelow;
 
       setTriggerWidth(triggerRect.width);
       setPopoverPosition(shouldOpenAbove ? positions["top right"] : positions["bottom right"]);

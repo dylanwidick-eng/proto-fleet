@@ -62,6 +62,12 @@ export interface RuleThreshold {
 
 export type CompileState = "ok" | "error";
 
+// A person who can be targeted as a notification recipient.
+export interface NotificationUser {
+  id: string;
+  name: string;
+}
+
 export interface Rule {
   id: string;
   organization_id: string;
@@ -71,6 +77,10 @@ export interface Rule {
   threshold: RuleThreshold;
   custom_expr: string | null;
   channel_ids: string[];
+  // Recipients to notify. Empty/undefined = everyone; otherwise only these users are paged.
+  recipient_user_ids?: string[];
+  // When true, firing this rule opens a repair ticket.
+  create_ticket?: boolean;
   silenced_until: string | null;
   enabled: boolean;
   created_at: string;

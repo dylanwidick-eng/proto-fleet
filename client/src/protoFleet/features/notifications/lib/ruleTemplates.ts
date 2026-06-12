@@ -16,7 +16,6 @@ export const RULE_TEMPLATES: RuleTemplateMeta[] = [
   { id: "command_failure", label: "Cmd failure", defaultDuration: 0, defaultValue: null, comparator: null },
   { id: "hardware_error", label: "Hardware error", defaultDuration: 0, defaultValue: null, comparator: null },
   { id: "energy", label: "Energy / Curtailment", defaultDuration: 0, defaultValue: null, comparator: null },
-  { id: "custom", label: "Custom", defaultDuration: 60, defaultValue: null, comparator: null },
 ];
 
 export const RULE_SCOPE_LABELS: Record<RuleScopeKind, string> = {

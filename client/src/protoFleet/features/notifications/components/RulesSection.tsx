@@ -1,34 +1,34 @@
 import { useCallback, useMemo, useState } from "react";
+import clsx from "clsx";
 import AddRuleModal from "./AddRuleModal";
 import AddSilenceModal from "./AddSilenceModal";
 import {
-  formatRuleChannels,
-  formatRuleCondition,
+  formatRuleLastFired,
+  formatRuleScopeSummary,
+  formatRuleThreshold,
 } from "@/protoFleet/features/notifications/lib/formatRuleSummary";
 import { useNotificationsStore } from "@/protoFleet/features/notifications/store/notificationsStore";
 import type { Rule } from "@/protoFleet/features/notifications/types";
-import { Edit, Pause, Play, Stop, Trash } from "@/shared/assets/icons";
+import { Edit, Pause, Play, Trash } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import Header from "@/shared/components/Header";
 import List from "@/shared/components/List";
 import type { ColConfig, ColTitles, ListAction } from "@/shared/components/List/types";
 import { pushToast, STATUSES } from "@/shared/features/toaster";
 
-type RuleColumns = "name" | "when" | "then";
+type RuleColumns = "name" | "condition" | "status";
 
 const colTitles: ColTitles<RuleColumns> = {
   name: "Name",
-  when: "When",
-  then: "Then",
+  condition: "Condition",
+  status: "Status",
 };
 
-const activeCols: RuleColumns[] = ["name", "when", "then"];
+const activeCols: RuleColumns[] = ["name", "condition", "status"];
 
 const RulesSection = () => {
   const rules = useNotificationsStore((s) => s.rules);
-  const channels = useNotificationsStore((s) => s.channels);
   const silences = useNotificationsStore((s) => s.silences);
-  const updateRule = useNotificationsStore((s) => s.updateRule);
   const removeRule = useNotificationsStore((s) => s.removeRule);
   const removeSilence = useNotificationsStore((s) => s.removeSilence);
 
@@ -54,8 +54,8 @@ const RulesSection = () => {
 
   // Enabled rules first, paused at the bottom. Preserves store order within each group.
   const sortedRules = useMemo(
-    () => rules.slice().sort((a, b) => Number(!a.enabled) - Number(!b.enabled)),
-    [rules],
+    () => rules.slice().sort((a, b) => Number(activeSilenceByRule.has(a.id)) - Number(activeSilenceByRule.has(b.id))),
+    [rules, activeSilenceByRule],
   );
 
   const openAdd = () => {
@@ -68,21 +68,6 @@ const RulesSection = () => {
     setShowModal(true);
   }, []);
 
-  const handleTogglePause = useCallback(
-    (rule: Rule) => {
-      updateRule(rule.id, (prev) => ({
-        ...prev,
-        enabled: !prev.enabled,
-        updated_at: new Date().toISOString(),
-      }));
-      pushToast({
-        message: rule.enabled ? `Paused: ${rule.name}` : `Resumed: ${rule.name}`,
-        status: STATUSES.success,
-      });
-    },
-    [updateRule],
-  );
-
   const handleDelete = useCallback(
     (rule: Rule) => {
       removeRule(rule.id);
@@ -91,12 +76,12 @@ const RulesSection = () => {
     [removeRule],
   );
 
-  const handleSilenceOrLift = useCallback(
+  const handlePauseOrResume = useCallback(
     (rule: Rule) => {
       const activeSilenceId = activeSilenceByRule.get(rule.id);
       if (activeSilenceId) {
         removeSilence(activeSilenceId);
-        pushToast({ message: "Silence lifted", status: STATUSES.success });
+        pushToast({ message: `Resumed: ${rule.name}`, status: STATUSES.success });
       } else {
         setSilencePrefillRuleId(rule.id);
         setShowSilenceModal(true);
@@ -113,14 +98,9 @@ const RulesSection = () => {
         actionHandler: handleEdit,
       },
       {
-        title: (rule) => (rule.enabled ? "Pause" : "Resume"),
-        icon: (rule) => (rule.enabled ? <Pause /> : <Play />),
-        actionHandler: handleTogglePause,
-      },
-      {
-        title: (rule) => (activeSilenceByRule.has(rule.id) ? "Lift silence" : "Silence"),
-        icon: <Stop />,
-        actionHandler: handleSilenceOrLift,
+        title: (rule) => (activeSilenceByRule.has(rule.id) ? "Resume" : "Pause"),
+        icon: (rule) => (activeSilenceByRule.has(rule.id) ? <Play /> : <Pause />),
+        actionHandler: handlePauseOrResume,
       },
       {
         title: "Delete",
@@ -129,40 +109,45 @@ const RulesSection = () => {
         actionHandler: handleDelete,
       },
     ],
-    [handleEdit, handleTogglePause, handleSilenceOrLift, handleDelete, activeSilenceByRule],
+    [handleEdit, handlePauseOrResume, handleDelete, activeSilenceByRule],
   );
 
   const colConfig: ColConfig<Rule, string, RuleColumns> = useMemo(
     () => ({
       name: {
         component: (rule) => (
-          <span className="flex items-center gap-2">
-            <span className="text-emphasis-300 text-text-primary">{rule.name}</span>
-            {!rule.enabled ? (
-              <span className="rounded bg-surface-5 px-2 py-0.5 text-200 text-text-primary-50">
-                Paused
-              </span>
-            ) : null}
-          </span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="truncate text-emphasis-300 text-text-primary">{rule.name}</span>
+            <span className="truncate text-200 text-text-primary-70">{formatRuleScopeSummary(rule)}</span>
+          </div>
         ),
         width: "w-80",
       },
-      when: {
+      condition: {
         component: (rule) => (
-          <span className="text-text-primary-50">{formatRuleCondition(rule)}</span>
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="truncate text-text-primary">{formatRuleThreshold(rule)}</span>
+            <span className="truncate text-200 text-text-primary-70">{formatRuleLastFired(rule)}</span>
+          </div>
         ),
         width: "w-96",
-        allowWrap: true,
       },
-      then: {
-        component: (rule) => (
-          <span className="text-text-primary-50">{formatRuleChannels(rule, channels)}</span>
-        ),
+      status: {
+        component: (rule) => {
+          const paused = activeSilenceByRule.has(rule.id);
+          return (
+            <div className="flex items-center gap-2">
+              <span
+                className={clsx("h-2 w-2 rounded-full", paused ? "bg-text-primary-30" : "bg-intent-success-fill")}
+              />
+              <span>{paused ? "Paused" : "Active"}</span>
+            </div>
+          );
+        },
         width: "w-80",
-        allowWrap: true,
       },
     }),
-    [channels],
+    [activeSilenceByRule],
   );
 
   return (
@@ -170,16 +155,11 @@ const RulesSection = () => {
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <Header title="Rules" titleSize="text-heading-200" />
-          <Button
-            variant={variants.secondary}
-            size={sizes.compact}
-            text="Add rule"
-            onClick={openAdd}
-          />
+          <Button variant={variants.secondary} size={sizes.compact} text="Add rule" onClick={openAdd} />
         </div>
         <p className="text-300 text-text-primary-50">
-          Conditions that decide when a notification fires and how it's scoped (site, building, rack,
-          group, pool, or schedule).
+          Conditions that decide when a notification fires and how it's scoped (site, building, rack, group, pool, or
+          schedule).
         </p>
       </div>
 
@@ -192,9 +172,7 @@ const RulesSection = () => {
         total={sortedRules.length}
         itemName={{ singular: "rule", plural: "rules" }}
         noDataElement={
-          <div className="py-10 text-center text-text-primary-50">
-            No rules yet — click Add rule to set one up.
-          </div>
+          <div className="py-10 text-center text-text-primary-50">No rules yet — click Add rule to set one up.</div>
         }
         actions={actions}
         applyColumnWidthsToCells
