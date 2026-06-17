@@ -1,0 +1,152 @@
+import { create } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
+
+import {
+  ActivityEntrySchema,
+  UserOptionSchema,
+  type ActivityEntry,
+  type UserOption,
+} from "@/protoFleet/api/generated/activity/v1/activity_pb";
+
+export function getSeedScopeTypes(): string[] {
+  return ["fleet", "site", "building", "rack", "group", "device", "pool", "schedule"];
+}
+
+export function getSeedUserOptions(): UserOption[] {
+  return [
+    create(UserOptionSchema, { userId: "u_guccimane", username: "guccimane" }),
+    create(UserOptionSchema, { userId: "u_dwidick", username: "dwidick" }),
+  ];
+}
+
+const minutesAgo = (m: number) => BigInt(Math.floor((Date.now() - m * 60 * 1000) / 1000));
+
+export function getSeedActivities(): ActivityEntry[] {
+  return [
+    create(ActivityEntrySchema, {
+      eventId: "act_login_1",
+      eventCategory: "auth",
+      eventType: "login",
+      description: "guccimane logged in",
+      actorType: "user",
+      userId: "u_guccimane",
+      username: "guccimane",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(2) }),
+      result: "success",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_reboot_1",
+      eventCategory: "device_command",
+      eventType: "reboot",
+      description: "Rebooted 12 miners",
+      scopeType: "group",
+      scopeLabel: "Dalton Bottom",
+      scopeCount: 12,
+      actorType: "user",
+      userId: "u_dwidick",
+      username: "dwidick",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(15) }),
+      result: "success",
+      batchId: "batch_reboot_001",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_power_1",
+      eventCategory: "device_command",
+      eventType: "set_power_target",
+      description: "Set power target to sleep on Rack R09",
+      scopeType: "rack",
+      scopeLabel: "Rack R09, Building A, Denver",
+      scopeCount: 40,
+      actorType: "user",
+      userId: "u_dwidick",
+      username: "dwidick",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(32) }),
+      result: "success",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_pool_1",
+      eventCategory: "pool",
+      eventType: "update_mining_pools",
+      description: "Updated primary pool to stratum+tcp://us-east.stratum.example:3333",
+      scopeType: "site",
+      scopeLabel: "Denver",
+      scopeCount: 480,
+      actorType: "user",
+      userId: "u_guccimane",
+      username: "guccimane",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(48) }),
+      result: "success",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_collection_1",
+      eventCategory: "collection",
+      eventType: "create_collection",
+      description: 'Created group "Night shift safe" with 62 miners',
+      scopeType: "group",
+      scopeLabel: "Night shift safe",
+      scopeCount: 62,
+      actorType: "user",
+      userId: "u_dwidick",
+      username: "dwidick",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(78) }),
+      result: "success",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_firmware_1",
+      eventCategory: "device_command",
+      eventType: "firmware_update",
+      description: "Firmware update to v4.2.1 — 1847/2000 miners",
+      scopeType: "site",
+      scopeLabel: "Austin",
+      scopeCount: 2000,
+      actorType: "user",
+      userId: "u_guccimane",
+      username: "guccimane",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(120) }),
+      result: "failure",
+      errorMessage: "153 miners failed: 89 timeout, 64 incompatible model",
+      batchId: "batch_firmware_001",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_rename_1",
+      eventCategory: "fleet_management",
+      eventType: "rename_miners",
+      description: "Renamed 8 miners in Rack R07",
+      scopeType: "rack",
+      scopeLabel: "Rack R07, Building A, Denver",
+      scopeCount: 8,
+      actorType: "user",
+      userId: "u_dwidick",
+      username: "dwidick",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(160) }),
+      result: "success",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_stop_1",
+      eventCategory: "device_command",
+      eventType: "stop_mining",
+      description: "Stopped mining on 24 miners (scheduled curtailment)",
+      scopeType: "building",
+      scopeLabel: "Building C, Denver",
+      scopeCount: 24,
+      actorType: "scheduler",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(200) }),
+      result: "success",
+      batchId: "batch_curtail_001",
+    }),
+    create(ActivityEntrySchema, {
+      eventId: "act_blink_1",
+      eventCategory: "device_command",
+      eventType: "blink_led",
+      description: "Blinked LED on M0042 (locating)",
+      scopeType: "device",
+      scopeLabel: "Antminer M0042",
+      scopeCount: 1,
+      actorType: "user",
+      userId: "u_dwidick",
+      username: "dwidick",
+      createdAt: create(TimestampSchema, { seconds: minutesAgo(240) }),
+      result: "success",
+    }),
+  ];
+}

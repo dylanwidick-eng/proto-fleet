@@ -7,8 +7,13 @@ import { useActivityFilterOptions } from "@/protoFleet/api/useActivityFilterOpti
 import { useExportActivity } from "@/protoFleet/api/useExportActivity";
 import NoFilterResultsEmptyState from "@/protoFleet/components/NoFilterResultsEmptyState";
 import ActivityFilters from "@/protoFleet/features/activity/components/ActivityFilters";
-import ActivityTable from "@/protoFleet/features/activity/components/ActivityTable";
 import { formatLabel } from "@/protoFleet/features/activity/utils/formatLabel";
+import UnifiedActivityFeed from "@/protoFleet/features/notifications/components/UnifiedActivityFeed";
+import {
+  getSeedActivities,
+  getSeedScopeTypes,
+  getSeedUserOptions,
+} from "@/protoFleet/features/notifications/lib/seedActivities";
 import { Alert, DismissTiny } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import Callout from "@/shared/components/Callout";
@@ -137,8 +142,14 @@ const ActivityPage = () => {
             searchValue={searchText}
             onSearchChange={handleSearchChange}
             eventTypes={eventTypes}
-            scopeTypes={scopeTypes}
-            users={users}
+            scopeTypes={
+              import.meta.env.VITE_DEMO_MODE === "1" && scopeTypes.length === 0
+                ? getSeedScopeTypes()
+                : scopeTypes
+            }
+            users={
+              import.meta.env.VITE_DEMO_MODE === "1" && users.length === 0 ? getSeedUserOptions() : users
+            }
             selectedTypes={selectedTypes}
             selectedScopes={selectedScopes}
             selectedUsers={selectedUsers}
@@ -165,13 +176,16 @@ const ActivityPage = () => {
         </div>
       </div>
 
-      {error ? (
+      {error && import.meta.env.VITE_DEMO_MODE !== "1" ? (
         <Callout className="mx-6 mb-4 laptop:mx-10" intent="danger" prefixIcon={<Alert />} title={error} />
       ) : null}
 
       <div className="p-6 pt-0 laptop:p-10 laptop:pt-0">
-        <ActivityTable
-          activities={activities}
+        <UnifiedActivityFeed
+          activities={
+            import.meta.env.VITE_DEMO_MODE === "1" ? [...activities, ...getSeedActivities()] : activities
+          }
+          notifications={[]}
           noDataElement={
             isLoading ? (
               <></>

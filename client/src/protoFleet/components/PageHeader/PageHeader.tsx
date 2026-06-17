@@ -11,8 +11,9 @@ import { type SiteWithCounts } from "@/protoFleet/api/generated/sites/v1/sites_p
 import { useSites } from "@/protoFleet/api/sites";
 import { MULTI_SITE_ENABLED } from "@/protoFleet/constants/featureFlags";
 import { usePageBackground } from "@/protoFleet/hooks/usePageBackground";
+import NotificationDrawer from "@/protoFleet/features/notifications/components/NotificationDrawer";
 import { useHasPermission } from "@/protoFleet/store";
-import { Pause } from "@/shared/assets/icons";
+import { Notification, Pause } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import { useReactiveLocalStorage } from "@/shared/hooks/useReactiveLocalStorage";
 import { useWindowDimensions } from "@/shared/hooks/useWindowDimensions";
@@ -31,6 +32,7 @@ interface HeaderWidgetsProps {
   dismissedSetup: boolean;
   onContinueSetup: () => void;
   schedulePillData: UseSchedulePillDataResult;
+  onBellClick: () => void;
 }
 
 const headerWidgetEnabled = true;
@@ -42,6 +44,7 @@ function HeaderWidgets({
   dismissedSetup,
   onContinueSetup,
   schedulePillData,
+  onBellClick,
 }: HeaderWidgetsProps): ReactElement {
   const { pillSchedule, sections, pendingScheduleId, onToggleScheduleStatus } = schedulePillData;
 
@@ -58,6 +61,11 @@ function HeaderWidgets({
           onToggleScheduleStatus={onToggleScheduleStatus}
         />
       ) : null}
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-core-primary-5 text-text-primary hover:opacity-80">
+        <button type="button" aria-label="Notifications" className="flex items-center" onClick={onBellClick}>
+          <Notification width="w-4" />
+        </button>
+      </div>
       {dismissedSetup ? (
         <Button variant={variants.secondary} size={sizes.compact} text="Continue setup" onClick={onContinueSetup} />
       ) : null}
@@ -76,6 +84,7 @@ function PageHeader({
   const [dismissedSetup, setDismissedSetup] = useReactiveLocalStorage<boolean>("completeSetupDismissed");
   const hasDismissedSetup = Boolean(dismissedSetup);
   const canReadCurtailment = useHasPermission("curtailment:read");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Multi-site: the SitePicker replaces today's LocationSelector when the
   // feature flag is on. Sites are fetched once on mount and held here so the
@@ -112,12 +121,17 @@ function PageHeader({
     setDismissedSetup(false);
   };
 
+  const handleBellClick = () => {
+    setDrawerOpen(true);
+  };
+
   const headerWidgetsProps = {
     activeCurtailmentEvent,
     canReadCurtailment,
     dismissedSetup: hasDismissedSetup,
     onContinueSetup: handleCompleteSetup,
     schedulePillData,
+    onBellClick: handleBellClick,
   };
   const hasVisibleCurtailmentPill = activeCurtailmentEvent !== null && canReadCurtailment;
   const showPhoneWidgets =
@@ -151,6 +165,7 @@ function PageHeader({
           <HeaderWidgets className="ml-5" {...headerWidgetsProps} />
         </div>
       ) : null}
+      <NotificationDrawer open={drawerOpen} onDismiss={() => setDrawerOpen(false)} />
     </>
   );
 }

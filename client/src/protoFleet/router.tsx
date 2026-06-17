@@ -91,6 +91,7 @@ const FleetSitesPage = lazy(importFleetSitesPage);
 const FleetDown = lazy(importFleetDown);
 const MaintenancePage = lazy(importMaintenancePage);
 const FleetInfraPage = lazy(importFleetInfraPage);
+const SettingsNotifications = lazy(() => import("@/protoFleet/features/notifications/pages/Notifications"));
 
 // Helper to check if an admin user has been created
 const checkFleetInitStatus = async (): Promise<boolean> => {
@@ -264,6 +265,12 @@ const router = createBrowserRouter([
     "/settings/api-keys",
     <SettingsLayout>
       <SettingsApiKeys />
+    </SettingsLayout>,
+  ),
+  createRoute(
+    "/settings/notifications",
+    <SettingsLayout>
+      <SettingsNotifications />
     </SettingsLayout>,
   ),
   createRoute(

@@ -32,14 +32,28 @@ const ALL_MEASUREMENT_TYPES: MeasurementType[] = [
 ];
 
 const Dashboard = () => {
-  const { devicePaired, statusLoaded } = useOnboardedStatus();
+  const { devicePaired: realDevicePaired, statusLoaded: realStatusLoaded } = useOnboardedStatus();
+  const demoMode = import.meta.env.VITE_DEMO_MODE === "1";
+  const devicePaired = demoMode ? true : realDevicePaired;
+  const statusLoaded = demoMode ? true : realStatusLoaded;
   const duration = useDuration();
   const setDuration = useSetDuration();
   const currentYear = new Date().getFullYear();
   const { refs } = useStickyState();
 
   // Fleet counts — polled for fresh minerStateCounts
-  const { totalMiners, stateCounts, hasLoaded: countsLoaded } = useFleetCounts({ pollIntervalMs: POLL_INTERVAL_MS });
+  const {
+    totalMiners: realTotalMiners,
+    stateCounts: realStateCounts,
+    hasLoaded: realCountsLoaded,
+  } = useFleetCounts({ pollIntervalMs: POLL_INTERVAL_MS });
+  // Demo seed: roughly mirror the 6 mock miners from seedMiners.ts (4 hashing, 1 broken, 1 offline).
+  const totalMiners = demoMode && realTotalMiners === 0 ? 6 : realTotalMiners;
+  const stateCounts =
+    demoMode && realTotalMiners === 0
+      ? { hashingCount: 4, brokenCount: 1, offlineCount: 1, sleepingCount: 0 }
+      : realStateCounts;
+  const countsLoaded = demoMode ? true : realCountsLoaded;
 
   // Component errors — polled, local state (no store)
   const { controlBoardErrors, fanErrors, hashboardErrors, psuErrors } = useComponentErrors({
