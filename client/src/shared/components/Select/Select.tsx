@@ -25,6 +25,7 @@ interface SelectProps {
   error?: boolean | string;
   testId?: string;
   className?: string;
+  hideLabel?: boolean;
   showSelectedIndicator?: boolean;
   suffixAction?: ReactNode;
   // Default behavior flips the popover above the trigger when more space is
@@ -43,6 +44,7 @@ const SelectContent = ({
   error,
   testId,
   className,
+  hideLabel = false,
   showSelectedIndicator = true,
   suffixAction,
   forceBelow,
@@ -147,16 +149,18 @@ const SelectContent = ({
             { "cursor-default": disabled },
           )}
         >
-          <div className="flex min-w-0 flex-col pt-[18px]">
-            <span
-              className={clsx(
-                "absolute text-text-primary-50",
-                "transition-[top] duration-150 ease-in-out",
-                hasValue || open ? "top-[7px] text-200" : "top-1/2 -translate-y-1/2 text-300",
-              )}
-            >
-              {label}
-            </span>
+          <div className={clsx("flex min-w-0 flex-col", { "pt-[18px]": !hideLabel })}>
+            {!hideLabel ? (
+              <span
+                className={clsx(
+                  "absolute text-text-primary-50",
+                  "transition-[top] duration-150 ease-in-out",
+                  hasValue || open ? "top-[7px] text-200" : "top-1/2 -translate-y-1/2 text-300",
+                )}
+              >
+                {label}
+              </span>
+            ) : null}
             {hasValue ? <span className="truncate text-300 text-text-primary">{selectedLabel}</span> : null}
           </div>
           <ChevronDown

@@ -19,6 +19,7 @@ import {
   importGroupsPage,
   importMiners,
   importMinersPage,
+  importNotificationsFeed,
   importOnboardingSettingsPage,
   importRackOverviewPage,
   importRacksPage,
@@ -65,6 +66,7 @@ import { routerConfig as singleMinerRoutes } from "@/protoOS/router";
 const Dashboard = lazy(importDashboard);
 const Miners = lazy(importMiners);
 const ActivityPage = lazy(importActivityPage);
+const NotificationsFeed = lazy(importNotificationsFeed);
 const EnergyPage = lazy(importEnergyPage);
 const ServerLogsPage = lazy(importServerLogsPage);
 const GroupsPage = lazy(importGroupsPage);
@@ -87,6 +89,7 @@ const SettingsFirmware = lazy(importSettingsFirmware);
 const SettingsSchedules = lazy(importSettingsSchedules);
 const SettingsCurtailment = lazy(importSettingsCurtailment);
 const SettingsAlerts = lazy(importSettingsAlerts);
+const SettingsNotifications = lazy(() => import("@/protoFleet/features/notifications/pages/Notifications"));
 const SettingsIntegrations = lazy(importSettingsIntegrations);
 const SiteDetailPage = lazy(importSiteDetailPage);
 const BuildingPage = lazy(importBuildingPage);
@@ -250,6 +253,9 @@ const router = createBrowserRouter([
   createRoute("/sites/:id", <SiteDetailPage />, { hideShellHeader: true }),
   createRoute("/buildings/:id", <BuildingPage />, { hideShellHeader: true }),
 
+  // Notifications (M4 — own top-level surface; always routed, nav-visibility is model-gated)
+  createRoute("/notifications", <NotificationsFeed />),
+
   // Single miner (fullscreen - protoOS routes handle layout). SingleMinerWrapper
   // wraps the parent Outlet so it stays mounted across tab navigations — the
   // protoOS tabs redirect via loaders, which would otherwise remount it (and
@@ -336,6 +342,12 @@ const router = createBrowserRouter([
     path: "/settings/api-keys",
     loader: () => redirect("/settings/integrations"),
   },
+  createRoute(
+    "/settings/notifications",
+    <SettingsLayout>
+      <SettingsNotifications />
+    </SettingsLayout>,
+  ),
   createRoute(
     "/settings/integrations",
     <SettingsLayout>

@@ -17,6 +17,7 @@ export { singleMinerRoutePrefetch };
 export const importDashboard = () => import("@/protoFleet/features/dashboard/pages/Dashboard");
 export const importMiners = () => import("./features/fleetManagement/components/Fleet");
 export const importActivityPage = () => import("@/protoFleet/features/activity/pages/ActivityPage");
+export const importNotificationsFeed = () => import("@/protoFleet/features/notifications/pages/NotificationsFeed");
 export const importEnergyPage = () => import("@/protoFleet/features/energy/pages/EnergyPage");
 export const importServerLogsPage = () => import("@/protoFleet/features/serverLogs/pages/ServerLogsPage");
 export const importGroupsPage = () => import("@/protoFleet/features/groupManagement/pages/GroupsPage");
@@ -62,6 +63,7 @@ export const globalRoutePrefetch: readonly RouteImporter[] = [
   importGroupsPage,
   importEnergyPage,
   importActivityPage,
+  importNotificationsFeed,
   importSettingsLayout,
   importSettingsNetwork,
 ];

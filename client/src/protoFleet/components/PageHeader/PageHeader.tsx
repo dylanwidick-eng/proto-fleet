@@ -1,5 +1,5 @@
-import { type ReactElement } from "react";
-import { useLocation } from "react-router-dom";
+import { type ReactElement, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 
 import CurtailmentPill from "./CurtailmentPill";
@@ -15,11 +15,13 @@ import SchedulePill from "./SchedulePill";
 import SitePicker from "./SitePicker";
 import type { UseSchedulePillDataResult } from "./useSchedulePillData";
 import { useSitesContext } from "@/protoFleet/api/SitesContext";
+import NotificationDrawer from "@/protoFleet/features/notifications/components/NotificationDrawer";
+import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
 import { usePageBackground } from "@/protoFleet/hooks/usePageBackground";
 import { scopedPath, unscopedScopablePath, useRouteSiteScope } from "@/protoFleet/routing/siteScope";
 import { useHasPermission } from "@/protoFleet/store";
 import { useFleetStore } from "@/protoFleet/store/useFleetStore";
-import { Menu } from "@/shared/assets/icons";
+import { Menu, Notification } from "@/shared/assets/icons";
 import Button, { sizes, variants } from "@/shared/components/Button";
 import { useReactiveLocalStorage } from "@/shared/hooks/useReactiveLocalStorage";
 import { useWindowDimensions } from "@/shared/hooks/useWindowDimensions";
@@ -37,6 +39,7 @@ interface HeaderWidgetsProps {
   canReadCurtailment: boolean;
   className?: string;
   dismissedSetup: boolean;
+  onBellClick: () => void;
   onContinueSetup: () => void;
   schedulePillData: UseSchedulePillDataResult;
   stacked?: boolean;
@@ -45,7 +48,7 @@ interface HeaderWidgetsProps {
 }
 
 const headerWidgetEnabled = true;
-type HeaderWidgetKind = "curtailment" | "schedule" | "setup";
+type HeaderWidgetKind = "curtailment" | "notifications" | "schedule" | "setup";
 
 function HeaderWidgets({
   activeCurtailmentEvent,
@@ -53,6 +56,7 @@ function HeaderWidgets({
   canReadCurtailment,
   className,
   dismissedSetup,
+  onBellClick,
   onContinueSetup,
   schedulePillData,
   stacked = false,
@@ -92,6 +96,17 @@ function HeaderWidgets({
                 onToggleScheduleStatus={onToggleScheduleStatus}
               />
             ) : null;
+          case "notifications":
+            return (
+              <div
+                key={widget}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-core-primary-5 text-text-primary hover:opacity-80"
+              >
+                <button type="button" aria-label="Alerts" className="flex items-center" onClick={onBellClick}>
+                  <Notification width="w-4" />
+                </button>
+              </div>
+            );
           case "setup":
             return dismissedSetup ? (
               <Button
@@ -128,6 +143,9 @@ function PageHeader({
   // ListSites is server-gated on org-scoped site:read; without it we skip the
   // fetch and hide the picker so non-site readers keep a clean header.
   const canReadSites = useHasPermission("site:read");
+  const notificationModel = useNotificationModel();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
 
   // The site catalog is owned by the shell-level SitesProvider (one fetch +
   // poll shared with the routed pages), so the picker just reads it here.
@@ -140,21 +158,31 @@ function PageHeader({
     setDismissedSetup(false);
   };
 
+  const handleBellClick = () => {
+    if (notificationModel === "m1") navigate("/activity");
+    else if (notificationModel === "m2") setDrawerOpen(true);
+    else if (notificationModel === "m3") navigate("/notifications");
+  };
+
   const headerWidgetsProps = {
     activeCurtailmentEvent,
     canReadCurtailment,
     dismissedSetup: hasDismissedSetup,
+    onBellClick: handleBellClick,
     onContinueSetup: handleCompleteSetup,
     schedulePillData,
   };
   const hasVisibleCurtailmentPill = activeCurtailmentEvent !== null && canReadCurtailment;
+  const hasNotificationButton = true;
   const headerWidgetKinds: HeaderWidgetKind[] = [
     ...(hasVisibleCurtailmentPill ? (["curtailment"] as const) : []),
     ...(schedulePillData.hasVisibleSchedules ? (["schedule"] as const) : []),
+    ...(hasNotificationButton ? (["notifications"] as const) : []),
     ...(hasDismissedSetup ? (["setup"] as const) : []),
   ];
   const headerWidgetCount = getVisibleHeaderWidgetCount({
     hasDismissedSetup,
+    hasNotificationButton,
     hasVisibleCurtailmentPill,
     hasVisibleSchedules: schedulePillData.hasVisibleSchedules,
   });
@@ -227,6 +255,7 @@ function PageHeader({
           />
         </div>
       ) : null}
+      <NotificationDrawer open={drawerOpen} onDismiss={() => setDrawerOpen(false)} />
     </>
   );
 }

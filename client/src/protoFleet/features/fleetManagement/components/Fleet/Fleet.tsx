@@ -40,6 +40,7 @@ import { parseFilterFromURL } from "@/protoFleet/features/fleetManagement/utils/
 import { FLEET_VISIBLE_PAIRING_STATUSES } from "@/protoFleet/features/fleetManagement/utils/fleetVisiblePairingFilter";
 import { encodeSortToURL, parseSortFromURL } from "@/protoFleet/features/fleetManagement/utils/sortUrlParams";
 import type { FilterLabelSource } from "@/protoFleet/features/fleetManagement/views/viewSummary";
+import { getSeedMinerIds, getSeedMiners } from "@/protoFleet/features/notifications/lib/seedMiners";
 import Miners from "@/protoFleet/features/onboarding/components/Miners";
 import { isPathScopable } from "@/protoFleet/routing/siteScope";
 import { useHasPermission } from "@/protoFleet/store";
@@ -242,8 +243,22 @@ const Fleet = () => {
     enabled: !siteScopeMatchesNoRows,
   });
 
+  // Demo-mode mock miners: if the backend returns empty (e.g. on Blockcell), drop in a seed fleet
+  // so reviewers can see the list UI rather than the empty pairing state.
+  const demoMode = import.meta.env.VITE_DEMO_MODE === "1";
+  const useDemoSeed = demoMode && hasInitialLoadCompleted && totalMiners === 0;
+  const demoIds = useMemo(() => (useDemoSeed ? getSeedMinerIds() : null), [useDemoSeed]);
+  const demoMiners = useMemo(() => (useDemoSeed ? getSeedMiners() : null), [useDemoSeed]);
+  const effectiveMinerIds = demoIds ?? minerIds;
+  const effectiveMiners = demoMiners ?? miners;
+  const effectiveTotalMiners = useDemoSeed ? (demoIds?.length ?? 0) : totalMiners;
+  const effectiveTotalUnfilteredMiners =
+    demoMode && !siteScopeMatchesNoRows && totalUnfilteredMiners === 0
+      ? (demoIds?.length ?? getSeedMinerIds().length)
+      : totalUnfilteredMiners;
+
   // Fetch errors for all loaded miners
-  const { errorsByDevice, hasLoaded: errorsLoaded, refetch: refetchErrors } = useDeviceErrors(minerIds);
+  const { errorsByDevice, hasLoaded: errorsLoaded, refetch: refetchErrors } = useDeviceErrors(effectiveMinerIds);
 
   // Batch operations (ephemeral UI state)
   const {
@@ -366,14 +381,14 @@ const Fleet = () => {
       <ErrorBoundary>
         <MinerList
           title={insideFleetShell ? undefined : "Miners"}
-          minerIds={siteScopeMatchesNoRows ? [] : minerIds}
-          miners={siteScopeMatchesNoRows ? {} : miners}
+          minerIds={siteScopeMatchesNoRows ? [] : effectiveMinerIds}
+          miners={siteScopeMatchesNoRows ? {} : effectiveMiners}
           errorsByDevice={siteScopeMatchesNoRows ? {} : errorsByDevice}
           errorsLoaded={siteScopeMatchesNoRows ? true : errorsLoaded}
           getActiveBatches={getActiveBatches}
           batchStateVersion={batchStateVersion}
-          totalMiners={siteScopeMatchesNoRows ? 0 : totalMiners}
-          totalUnfilteredMiners={siteScopeMatchesNoRows ? 0 : totalUnfilteredMiners}
+          totalMiners={siteScopeMatchesNoRows ? 0 : effectiveTotalMiners}
+          totalUnfilteredMiners={siteScopeMatchesNoRows ? 0 : effectiveTotalUnfilteredMiners}
           totalDisabledMiners={siteScopeMatchesNoRows ? 0 : totalAuthNeededMiners}
           totalDisabledMinersFresh={siteScopeMatchesNoRows ? true : totalAuthNeededMinersFresh}
           paddingLeft={{

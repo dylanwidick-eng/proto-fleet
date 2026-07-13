@@ -1,5 +1,6 @@
 interface HeaderWidgetVisibility {
   hasDismissedSetup: boolean;
+  hasNotificationButton?: boolean;
   hasVisibleCurtailmentPill: boolean;
   hasVisibleSchedules: boolean;
 }
@@ -14,10 +15,16 @@ export const PHONE_HEADER_WIDGET_STACK_THREE_HEIGHT_CLASS = "h-[120px]";
 
 export function getVisibleHeaderWidgetCount({
   hasDismissedSetup,
+  hasNotificationButton = false,
   hasVisibleCurtailmentPill,
   hasVisibleSchedules,
 }: HeaderWidgetVisibility): number {
-  return Number(hasVisibleCurtailmentPill) + Number(hasVisibleSchedules) + Number(hasDismissedSetup);
+  return (
+    Number(hasVisibleCurtailmentPill) +
+    Number(hasVisibleSchedules) +
+    Number(hasNotificationButton) +
+    Number(hasDismissedSetup)
+  );
 }
 
 export function shouldStackPhoneHeaderWidgets(widgetCount: number): boolean {

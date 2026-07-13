@@ -39,7 +39,10 @@ const ALL_MEASUREMENT_TYPES: MeasurementType[] = [
 ];
 
 const Dashboard = () => {
-  const { devicePaired, statusLoaded } = useOnboardedStatus();
+  const { devicePaired: realDevicePaired, statusLoaded: realStatusLoaded } = useOnboardedStatus();
+  const demoMode = import.meta.env.VITE_DEMO_MODE === "1";
+  const devicePaired = demoMode ? true : realDevicePaired;
+  const statusLoaded = demoMode ? true : realStatusLoaded;
   const duration = useDuration();
   const setDuration = useSetDuration();
   // Gate on both the read permission and the runtime feature probe so the card is hidden when the alerts sidecar is disabled.
@@ -92,15 +95,22 @@ const Dashboard = () => {
 
   // Fleet counts — polled for fresh minerStateCounts, scoped to the active site
   const {
-    totalMiners,
-    stateCounts,
-    hasLoaded: countsLoaded,
+    totalMiners: realTotalMiners,
+    stateCounts: realStateCounts,
+    hasLoaded: realCountsLoaded,
   } = useFleetCounts({
     enabled: scopedRouteReady,
     pollIntervalMs: POLL_INTERVAL_MS,
     siteIds: siteFilter.siteIds,
     includeUnassigned: siteFilter.includeUnassigned,
   });
+  // Demo seed: roughly mirror the 6 mock miners from seedMiners.ts (4 hashing, 1 broken, 1 offline).
+  const useDemoCounts = demoMode && scopedRouteReady && realTotalMiners === 0;
+  const totalMiners = useDemoCounts ? 6 : realTotalMiners;
+  const stateCounts = useDemoCounts
+    ? { hashingCount: 4, brokenCount: 1, offlineCount: 1, sleepingCount: 0 }
+    : realStateCounts;
+  const countsLoaded = useDemoCounts ? true : realCountsLoaded;
 
   // Combined telemetry — polled, replaces data each cycle (no streaming merge)
   const telemetryOptions = useMemo(

@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 
-import { Activity, Fleet, Groups, Home, IconProps, LightningAlt, Settings } from "@/shared/assets/icons";
+import type { NotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
+import { Activity, Fleet, Groups, Home, IconProps, LightningAlt, Notification, Settings } from "@/shared/assets/icons";
 
 // Runtime-gated features: an entry tagged with one is shown only when the server
 // reports the feature enabled (see SecondaryNavigation). Distinct from
@@ -109,6 +110,19 @@ export const primaryNavItems: NavItem[] = [
   },
 ];
 
+// Returns the primary nav with a "Notifications" entry inserted after Activity when M4 is active.
+export const getPrimaryNavItems = (notificationModel: NotificationModel): NavItem[] => {
+  if (notificationModel !== "m3") return primaryNavItems;
+  const activityIdx = primaryNavItems.findIndex((i) => i.path === "/activity");
+  if (activityIdx < 0) return primaryNavItems;
+  const insertAt = activityIdx + 1;
+  return [
+    ...primaryNavItems.slice(0, insertAt),
+    { path: "/notifications", label: "Notifications", icon: Notification },
+    ...primaryNavItems.slice(insertAt),
+  ];
+};
+
 // Secondary navigation items (shown in settings submenu)
 export const secondaryNavItems: SecondaryNavItem[] = [
   {
@@ -154,6 +168,14 @@ export const secondaryNavItems: SecondaryNavItem[] = [
     parent: "/settings",
     section: "Automation",
     requiredPermission: "curtailment:manage",
+  },
+  {
+    // Design prototype for the alerts flow (see features/notifications).
+    // The entry below at /settings/alerts is the production surface.
+    path: "/settings/notifications",
+    label: "Alerts (Design)",
+    parent: "/settings",
+    section: "Automation",
   },
   {
     path: "/settings/alerts",

@@ -34,7 +34,7 @@ const SettingsLayout = ({ children }: { children?: ReactNode }) => {
 
   return (
     <>
-      <div className="flex h-full grow flex-row">
+      <div className="flex min-h-full grow flex-row">
         <SecondaryNavigation items={secondaryNavItems} />
         <div className="flex min-w-0 grow flex-col p-10 phone:p-6">
           {showOrgWideNotice ? <OrgWideNotice /> : null}

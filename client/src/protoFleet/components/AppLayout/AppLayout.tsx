@@ -15,7 +15,8 @@ import {
 } from "@/protoFleet/components/PageHeader/headerWidgetLayout";
 import { useCurtailmentPillData } from "@/protoFleet/components/PageHeader/useCurtailmentPillData";
 import { useSchedulePillData } from "@/protoFleet/components/PageHeader/useSchedulePillData";
-import { primaryNavItems } from "@/protoFleet/config/navItems";
+import { getPrimaryNavItems } from "@/protoFleet/config/navItems";
+import { useNotificationModel } from "@/protoFleet/features/notifications/lib/demoModel";
 import { usePageBackground } from "@/protoFleet/hooks/usePageBackground";
 import { useHasPermission } from "@/protoFleet/store";
 import { Menu } from "@/shared/assets/icons";
@@ -37,8 +38,12 @@ const AppLayoutContent = ({ children, hideShellHeader = false }: Props) => {
   const hasDismissedSetup = Boolean(dismissedSetup);
   const canReadCurtailment = useHasPermission("curtailment:read");
   const hasVisibleCurtailmentPill = activeCurtailmentEvent !== null && canReadCurtailment;
+  const hasNotificationButton = true;
+  const notificationModel = useNotificationModel();
+  const navItems = getPrimaryNavItems(notificationModel);
   const headerWidgetCount = getVisibleHeaderWidgetCount({
     hasDismissedSetup,
+    hasNotificationButton,
     hasVisibleCurtailmentPill,
     hasVisibleSchedules: schedulePillData.hasVisibleSchedules,
   });
@@ -70,7 +75,7 @@ const AppLayoutContent = ({ children, hideShellHeader = false }: Props) => {
   return (
     <div className={clsx("absolute top-0 right-0 bottom-0 left-0 overflow-hidden", bgClass)}>
       <div className="fixed top-0 z-50 h-fit w-0 laptop:w-16 desktop:w-50">
-        <NavigationMenu items={primaryNavItems} isVisible={isMenuOpen} closeMenu={() => setIsMenuOpen(false)} />
+        <NavigationMenu items={navItems} isVisible={isMenuOpen} closeMenu={() => setIsMenuOpen(false)} />
       </div>
 
       {showDetailMenuTrigger ? (
