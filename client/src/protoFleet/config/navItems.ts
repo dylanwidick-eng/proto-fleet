@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 
-import { Activity, Fleet, Groups, Home, IconProps, LightningAlt, Settings } from "@/shared/assets/icons";
+import { AGENT_ENABLED } from "@/protoFleet/constants/featureFlags";
+import { Activity, Agent, Fleet, Groups, Home, IconProps, LightningAlt, Settings } from "@/shared/assets/icons";
 
 // Runtime-gated features: an entry tagged with one is shown only when the server
 // reports the feature enabled (see SecondaryNavigation). Distinct from
@@ -102,6 +103,12 @@ export const primaryNavItems: NavItem[] = [
     requiredPermission: "activity:read",
     scopable: true,
   },
+  // Agent design prototype (see features/agent). AGENT_ENABLED is a
+  // build-time constant, so a module-scope conditional spread keeps every
+  // consumer of primaryNavItems consistent without a runtime wrapper. No
+  // requiredPermission: the surface is client-only mock data with no
+  // backing RPC gate to mirror.
+  ...(AGENT_ENABLED ? [{ path: "/agent", label: "Agent", icon: Agent }] : []),
   {
     path: "/settings",
     label: "Settings",

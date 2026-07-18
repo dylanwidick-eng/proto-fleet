@@ -13,10 +13,14 @@ echo "Starting ProtoFleet client..."
 ALERTS_ENABLED=$([[ "${ENABLE_BETA_ALERTS:-}" = "true" ]] && echo "true" || echo "false")
 (
   cd client
+  # The Agent design prototype is behind VITE_AGENT_ENABLED; it defaults ON
+  # in local dev (a design prototype's job is to be seen) and OFF in real
+  # builds. Opt out with AGENT_UI_ENABLED=false.
   VITE_VERSION="$GIT_VERSION" \
   VITE_BUILD_DATE="$BUILD_DATE" \
   VITE_COMMIT="$GIT_COMMIT" \
   VITE_ALERTS_ENABLED="$ALERTS_ENABLED" \
+  VITE_AGENT_ENABLED="${AGENT_UI_ENABLED:-true}" \
   npm run dev:protoFleet
 ) & CLIENT_PID=$!
 echo "Client PID: $CLIENT_PID"

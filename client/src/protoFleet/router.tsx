@@ -6,6 +6,7 @@ import App from "./components/App";
 import SingleMinerWrapper from "./components/SingleMinerWrapper";
 import {
   importActivityPage,
+  importAgentPage,
   importAuth,
   importBuildingPage,
   importDashboard,
@@ -64,6 +65,7 @@ import { routerConfig as singleMinerRoutes } from "@/protoOS/router";
 // through this file. Auth metadata for the router lives in `routeAuth.ts`.
 
 const Dashboard = lazy(importDashboard);
+const AgentPage = lazy(importAgentPage);
 const Miners = lazy(importMiners);
 const ActivityPage = lazy(importActivityPage);
 const EnergyPage = lazy(importEnergyPage);
@@ -240,6 +242,11 @@ const router = createBrowserRouter([
     element: <SiteScopeLayout />,
     children: [...createScopableRoutes(false), { path: "groups/:groupLabel", loader: scopedGroupDetailRedirectLoader }],
   },
+
+  // Agent (design prototype — see features/agent). Always routed; nav
+  // visibility is flag-gated (AGENT_ENABLED). Org-wide, so it lives outside
+  // the scopable trees and SCOPABLE_ROOT_SEGMENTS.
+  createRoute("/agent", <AgentPage />),
 
   { path: "/miners", loader: minersRedirectLoader },
   { path: "/racks", loader: racksRedirectLoader },

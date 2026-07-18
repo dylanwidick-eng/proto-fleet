@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { MeasurementType, type Metric } from "@/protoFleet/api/generated/telemetry/v1/telemetry_pb";
 import { buildKnownSiteIds } from "@/protoFleet/api/sites";
 import { useSitesContext } from "@/protoFleet/api/SitesContext";
@@ -6,6 +6,7 @@ import useFleetCounts from "@/protoFleet/api/useFleetCounts";
 import { useOnboardedStatus } from "@/protoFleet/api/useOnboardedStatus";
 import { useTelemetryMetrics } from "@/protoFleet/api/useTelemetryMetrics";
 import SitePicker, { siteFilterFromActive, useActiveSite } from "@/protoFleet/components/PageHeader/SitePicker";
+import { AGENT_ENABLED } from "@/protoFleet/constants/featureFlags";
 import { POLL_INTERVAL_MS } from "@/protoFleet/constants/polling";
 import { useAlertsEnabled } from "@/protoFleet/features/alerts/api/useAlertsEnabled";
 import ActiveAlertsCard from "@/protoFleet/features/alerts/components/ActiveAlertsCard";
@@ -27,6 +28,11 @@ import DurationSelector, { fleetDurations } from "@/shared/components/DurationSe
 import ProgressCircular from "@/shared/components/ProgressCircular";
 import { useStickyState } from "@/shared/hooks/useStickyState";
 import { buildVersionInfo } from "@/shared/utils/version";
+
+// Agent design prototype page-insight module — lazy like the App.tsx
+// AgentFloating mount (PORT_PLAN.md §4), so flag-off builds never load
+// (or execute) any agent code from the dashboard chunk.
+const AgentPageInsights = lazy(() => import("@/protoFleet/features/agent/components/pageInsights/AgentPageInsights"));
 
 // Constants for telemetry options - stable references to prevent unnecessary re-renders
 const ALL_DEVICES: string[] = [];
@@ -182,6 +188,14 @@ const Dashboard = () => {
                 />
               ) : null}
             </div>
+            {/* Agent design prototype (features/agent) — fully self-removing
+                when nothing matches; gated with the rest of the agent
+                surfaces. Carries its own vertical margins. */}
+            {AGENT_ENABLED ? (
+              <Suspense fallback={null}>
+                <AgentPageInsights page="dashboard" />
+              </Suspense>
+            ) : null}
             <div className="mt-6">
               {activeSite.kind === "site" ? (
                 <FleetHealthSection

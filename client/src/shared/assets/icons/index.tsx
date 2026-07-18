@@ -1,4 +1,5 @@
 import Activity from "./Activity";
+import Agent from "./Agent";
 import Alert from "./Alert";
 import ArrowDown from "./ArrowDown";
 import ArrowLeftCompact from "./ArrowLeftCompact";
@@ -88,6 +89,7 @@ import Unpair from "./Unpair";
 
 export {
   Activity,
+  Agent,
   Alert,
   ArrowDown,
   ArrowLeftCompact,

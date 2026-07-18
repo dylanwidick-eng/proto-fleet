@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { create } from "@bufbuild/protobuf";
 import { POLL_INTERVAL_MS } from "./constants";
@@ -26,6 +26,7 @@ import {
   siteFilterFromActive,
   useActiveSite,
 } from "@/protoFleet/components/PageHeader/SitePicker";
+import { AGENT_ENABLED } from "@/protoFleet/constants/featureFlags";
 import { useFleetOutletContext } from "@/protoFleet/features/fleetManagement/components/FleetLayout";
 import MinerList from "@/protoFleet/features/fleetManagement/components/MinerList";
 import { type MinerColumn } from "@/protoFleet/features/fleetManagement/components/MinerList/constants";
@@ -45,6 +46,11 @@ import { isPathScopable } from "@/protoFleet/routing/siteScope";
 import { useHasPermission } from "@/protoFleet/store";
 import ErrorBoundary from "@/shared/components/ErrorBoundary";
 import { SORT_ASC, SORT_DESC } from "@/shared/components/List/types";
+
+// Agent design prototype page-insight module — lazy like the App.tsx
+// AgentFloating mount (PORT_PLAN.md §4), so flag-off builds never load
+// (or execute) any agent code from the miners-page chunk.
+const AgentPageInsights = lazy(() => import("@/protoFleet/features/agent/components/pageInsights/AgentPageInsights"));
 
 // Default sort: Name ascending (alphabetical A-Z)
 const DEFAULT_SORT_CONFIG: SortConfig = create(SortConfigSchema, {
@@ -363,6 +369,18 @@ const Fleet = () => {
 
   return (
     <>
+      {/* Agent design prototype (features/agent) — fully self-removing when
+          nothing matches (the wrapper is zero-height then, since the module
+          carries its own vertical margins); gated with the rest of the agent
+          surfaces. Padding mirrors MinerList's paddingLeft so the module
+          aligns with the list. */}
+      {AGENT_ENABLED ? (
+        <div className="px-6 laptop:px-10">
+          <Suspense fallback={null}>
+            <AgentPageInsights page="miners" />
+          </Suspense>
+        </div>
+      ) : null}
       <ErrorBoundary>
         <MinerList
           title={insideFleetShell ? undefined : "Miners"}

@@ -9,6 +9,7 @@
 // route tree. The tier addition isn't lint-enforced — a missed entry
 // leaves the chunk un-warmed without breaking the build.
 
+import { AGENT_ENABLED } from "@/protoFleet/constants/featureFlags";
 import { singleMinerRoutePrefetch } from "@/protoOS/routePrefetch"; // eslint-disable-line no-restricted-imports -- Fleet shell embeds the protoOS single-miner experience
 import type { RouteImporter } from "@/shared/utils/prefetchRoutes";
 
@@ -49,6 +50,7 @@ export const importFleetBuildingsPage = () => import("@/protoFleet/features/flee
 export const importFleetSitesPage = () => import("@/protoFleet/features/fleetManagement/pages/FleetSitesPage");
 export const importFleetDown = () => import("@/protoFleet/components/FleetDown/FleetDown");
 export const importFleetInfraPage = () => import("@/protoFleet/features/fleetManagement/pages/FleetInfraPage");
+export const importAgentPage = () => import("@/protoFleet/features/agent/pages/AgentPage");
 
 // Sidebar destinations + the default settings sub-route. App.tsx
 // triggers this at idle so the first nav click has no Suspense flash.
@@ -63,6 +65,9 @@ export const globalRoutePrefetch: readonly RouteImporter[] = [
   importGroupsPage,
   importEnergyPage,
   importActivityPage,
+  // Agent design prototype: only warm the chunk when the surface is
+  // discoverable — flag-off builds never pay for it.
+  ...(AGENT_ENABLED ? [importAgentPage] : []),
   importSettingsLayout,
   importSettingsNetwork,
 ];

@@ -1,9 +1,10 @@
-import { type ErrorInfo, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
+import { type ErrorInfo, lazy, ReactNode, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 import { useMatches } from "react-router-dom";
 import clsx from "clsx";
 
 import { onboardingClient } from "@/protoFleet/api/clients";
 import AppLayout from "@/protoFleet/components/AppLayout";
+import { AGENT_ENABLED } from "@/protoFleet/constants/featureFlags";
 import { requiresAuth } from "@/protoFleet/routeAuth";
 import { globalRoutePrefetch } from "@/protoFleet/routePrefetch";
 import type { ProtoFleetRouteHandle } from "@/protoFleet/routing/routeHandle";
@@ -17,6 +18,11 @@ import { Toaster } from "@/shared/features/toaster";
 import { reportObservabilityError } from "@/shared/observability";
 import { isBackendDownError } from "@/shared/utils/backendHealth";
 import { prefetchRoutes } from "@/shared/utils/prefetchRoutes";
+
+// Floating layer of the Agent design prototype (FAB + Fleet-bot tile, plus
+// the store-routed agent modals — see features/agent). Lazy so flag-off
+// builds never load the chunk; only mounted when AGENT_ENABLED.
+const AgentFloating = lazy(() => import("@/protoFleet/features/agent/components/floating/AgentFloating"));
 
 interface AppProps {
   children?: ReactNode;
@@ -137,6 +143,14 @@ const App = ({ children, fullscreen }: AppProps) => {
       >
         <Toaster />
       </div>
+
+      {/* Agent prototype floating layer — sits next to the Toaster so it
+          shares the fixed/high-z convention; it hides itself on /agent. */}
+      {AGENT_ENABLED ? (
+        <Suspense fallback={null}>
+          <AgentFloating />
+        </Suspense>
+      ) : null}
 
       <Suspense
         fallback={

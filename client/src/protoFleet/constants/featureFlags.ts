@@ -26,3 +26,16 @@ export const INFRASTRUCTURE_DEVICES_ENABLED = import.meta.env.VITE_INFRASTRUCTUR
  * the nav stays hidden by default. Override with `VITE_ALERTS_ENABLED=true`.
  */
 export const ALERTS_ENABLED = import.meta.env.VITE_ALERTS_ENABLED === "true";
+
+/**
+ * Agent design prototype (see features/agent) — a client-only, mock-data
+ * demo of the agentic fleet UI. When on, the "Agent" sidebar entry, the
+ * floating FAB/Fleet-bot tile, and the agent page-insight modules are
+ * discoverable. The `/agent` route stays registered either way so QA and
+ * dogfood can still deep-link while the flag is off; the flag gates
+ * visibility (and the route-chunk prefetch tier), never the route itself.
+ * Off = "notification mode": zero AI surfaces mounted anywhere.
+ * `dev.sh` defaults this on locally (a design prototype's job is to be
+ * seen); real builds default off. Override with `VITE_AGENT_ENABLED=true`.
+ */
+export const AGENT_ENABLED = import.meta.env.VITE_AGENT_ENABLED === "true";
